@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  detectIPVersion,
-  getClientIP,
-  isValidIP,
-  isPrivateIP,
-} from "@/lib/ip-detection";
+import { detectIPVersion, getClientIP, isValidIP } from "@/lib/ip-detection";
 import { IPInfo } from "@/lib/store";
+import { geoIPService } from "@/lib/geoip";
 
-// 模拟IP查询函数（暂时使用示例数据，后续集成真实数据库）
+// 真实的IP查询函数，使用MMDB数据库
 async function queryIPInfo(ip: string): Promise<IPInfo> {
   const ipVersion = detectIPVersion(ip);
 
@@ -15,54 +11,16 @@ async function queryIPInfo(ip: string): Promise<IPInfo> {
     throw new Error("无效的IP地址格式");
   }
 
-  // 模拟查询延迟
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  // 检查是否为私有IP
-  if (isPrivateIP(ip)) {
-    return {
-      ip,
-      country: "私有网络",
-      countryCode: "PRIVATE",
-      city: "本地网络",
-      location: {
-        latitude: 0,
-        longitude: 0,
-        accuracy_radius: 0,
-      },
-      accuracy: "high",
-      source: "MaxMind",
-      ipVersion,
-      isp: "私有网络",
-      timezone: "UTC",
-    };
+  try {
+    // 使用真实的GeoIP服务查询
+    const result = await geoIPService.queryIPInfo(ip);
+    return result;
+  } catch (error) {
+    console.error("IP查询失败:", error);
+    throw new Error(
+      `IP查询失败: ${error instanceof Error ? error.message : "未知错误"}`
+    );
   }
-
-  // 模拟不同IP的查询结果
-  const mockData: IPInfo = {
-    ip,
-    country: ipVersion === "IPv6" ? "美国" : "中国",
-    countryCode: ipVersion === "IPv6" ? "US" : "CN",
-    province: ipVersion === "IPv6" ? "California" : "广东省",
-    provinceCode: ipVersion === "IPv6" ? "CA" : "GD",
-    city: ipVersion === "IPv6" ? "San Francisco" : "深圳市",
-    cityCode: ipVersion === "IPv6" ? "SF" : "SZ",
-    district: ipVersion === "IPv6" ? undefined : "南山区",
-    isp: ipVersion === "IPv6" ? "Google LLC" : "中国电信",
-    net: ipVersion === "IPv6" ? "AS15169" : "AS4134",
-    location: {
-      latitude: ipVersion === "IPv6" ? 37.7749 : 22.5431,
-      longitude: ipVersion === "IPv6" ? -122.4194 : 114.0579,
-      accuracy_radius: ipVersion === "IPv6" ? 50 : 10,
-    },
-    timezone: ipVersion === "IPv6" ? "America/Los_Angeles" : "Asia/Shanghai",
-    postal: ipVersion === "IPv6" ? "94102" : "518000",
-    accuracy: ipVersion === "IPv6" ? "medium" : "high",
-    source: ipVersion === "IPv6" ? "MaxMind" : "GeoCN",
-    ipVersion,
-  };
-
-  return mockData;
 }
 
 // GET请求：获取客户端IP信息
