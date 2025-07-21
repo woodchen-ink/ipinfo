@@ -57,8 +57,8 @@ export default function ThemeToggle() {
                 : clipPath,
             },
             {
-              duration: 400,
-              easing: 'ease-out',
+              duration: 600,
+              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
               pseudoElement: isDark
                 ? '::view-transition-old(root)'
                 : '::view-transition-new(root)',
