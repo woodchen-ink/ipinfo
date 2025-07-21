@@ -16,19 +16,19 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IP地址查询 - 精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
+  title: "IP-Search",
   description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
   keywords: "IP查询,IPv4,IPv6,地理位置,运营商,ASN,网络信息,IP定位",
-  authors: [{ name: "IP查询工具" }],
-  creator: "IP查询工具",
-  publisher: "IP查询工具",
+  authors: [{ name: "dnslin" }],
+  creator: "dnslin",
+  publisher: "dnslin",
   robots: "index, follow",
   openGraph: {
     type: "website",
     locale: "zh_CN",
     title: "IP地址查询 - 精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
     description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
-    siteName: "IP地址查询",
+    siteName: "IP-Search",
   },
   twitter: {
     card: "summary_large_image",

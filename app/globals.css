@@ -307,7 +307,7 @@ button,
 input,
 textarea,
 select {
-  transition-duration: 200ms;
+  transition-duration: 100ms;
 }
 
 /* View Transitions API 支持 */
