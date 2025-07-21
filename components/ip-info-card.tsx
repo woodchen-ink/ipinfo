@@ -13,7 +13,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { IPInfo } from '@/lib/store';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface IPInfoCardProps {
   ipData: IPInfo;
@@ -21,6 +21,29 @@ interface IPInfoCardProps {
 
 export default function IPInfoCard({ ipData }: IPInfoCardProps) {
   const [copied, setCopied] = useState('');
+  const [currentTime, setCurrentTime] = useState<string>('');
+
+  // Update current time only on client side to avoid hydration mismatch
+  useEffect(() => {
+    const updateTime = () => {
+      if (ipData.timezone) {
+        setCurrentTime(new Date().toLocaleString('zh-CN', {
+          timeZone: ipData.timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }));
+      }
+    };
+
+    updateTime(); // Set initial time
+    const interval = setInterval(updateTime, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [ipData.timezone]);
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
@@ -182,17 +205,11 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                 </div>
                 <div className="pl-7 space-y-2">
                   <p className="font-mono text-gray-800">{ipData.timezone}</p>
-                  <p className="text-sm text-gray-600">
-                    当地时间: {new Date().toLocaleString('zh-CN', {
-                      timeZone: ipData.timezone,
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit'
-                    })}
-                  </p>
+                  {currentTime && (
+                    <p className="text-sm text-gray-600">
+                      当地时间: {currentTime}
+                    </p>
+                  )}
                 </div>
               </motion.div>
             )}

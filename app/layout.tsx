@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import "./globals.css";
 
@@ -16,26 +16,30 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "极简IP查询 - 精确的IPv4/IPv6地理位置查询工具",
-  description: "专业的IP地址查询工具，支持IPv4/IPv6双栈，提供精确的地理位置、运营商信息和网络详情查询服务。",
+  title: "IP地址查询 - 精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
+  description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
   keywords: "IP查询,IPv4,IPv6,地理位置,运营商,ASN,网络信息,IP定位",
-  authors: [{ name: "极简IP查询团队" }],
-  creator: "极简IP查询",
-  publisher: "极简IP查询",
+  authors: [{ name: "IP查询工具" }],
+  creator: "IP查询工具",
+  publisher: "IP查询工具",
   robots: "index, follow",
   openGraph: {
     type: "website",
     locale: "zh_CN",
-    title: "极简IP查询 - 精确的IPv4/IPv6地理位置查询工具",
-    description: "专业的IP地址查询工具，支持IPv4/IPv6双栈，提供精确的地理位置、运营商信息和网络详情查询服务。",
-    siteName: "极简IP查询",
+    title: "IP地址查询 - 精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
+    description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
+    siteName: "IP地址查询",
   },
   twitter: {
     card: "summary_large_image",
-    title: "极简IP查询 - 精确的IPv4/IPv6地理位置查询工具",
-    description: "专业的IP地址查询工具，支持IPv4/IPv6双栈，提供精确的地理位置、运营商信息和网络详情查询服务。",
+    title: "IP地址查询 - 精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
+    description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
   },
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: "#3B82F6",
 };
 

@@ -1,19 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Wifi, Globe } from 'lucide-react';
 
 export default function VersionSwitcher() {
-  const currentDomain = typeof window !== 'undefined' ? window.location.hostname : '';
-  const baseDomain = currentDomain.replace(/^(ip4?\.|ip6?\.)/, '');
+  const [currentDomain, setCurrentDomain] = useState('');
+  const [baseDomain, setBaseDomain] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const domain = window.location.hostname;
+    setCurrentDomain(domain);
+    setBaseDomain(domain.replace(/^(ip4?\.|ip6?\.)/, ''));
+  }, []);
   
   const versions = [
     {
       id: 'auto',
       label: '自动检测',
       icon: Globe,
-      url: `https://ip.${baseDomain}`,
+      url: baseDomain ? `https://ip.${baseDomain}` : '#',
       description: '自动选择最佳IP版本',
       color: 'text-gray-600',
       bg: 'bg-gray-100'
@@ -22,7 +30,7 @@ export default function VersionSwitcher() {
       id: 'ipv4',
       label: 'IPv4',
       icon: Wifi,
-      url: `https://ip4.${baseDomain}`,
+      url: baseDomain ? `https://ip4.${baseDomain}` : '#',
       description: '强制使用IPv4查询',
       color: 'text-blue-600',
       bg: 'bg-blue-100'
@@ -31,7 +39,7 @@ export default function VersionSwitcher() {
       id: 'ipv6',
       label: 'IPv6',
       icon: Wifi,
-      url: `https://ip6.${baseDomain}`,
+      url: baseDomain ? `https://ip6.${baseDomain}` : '#',
       description: '强制使用IPv6查询',
       color: 'text-purple-600',
       bg: 'bg-purple-100'
@@ -39,6 +47,7 @@ export default function VersionSwitcher() {
   ];
 
   const getCurrentVersion = () => {
+    if (!isClient) return 'auto'; // 服务器端和首次渲染时默认为auto
     if (currentDomain.startsWith('ip4.')) return 'ipv4';
     if (currentDomain.startsWith('ip6.')) return 'ipv6';
     return 'auto';
@@ -58,11 +67,13 @@ export default function VersionSwitcher() {
             <motion.a
               key={version.id}
               href={version.url}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isClient ? { scale: 1.05 } : {}}
+              whileTap={isClient ? { scale: 0.95 } : {}}
+              onClick={!isClient || version.url === '#' ? (e) => e.preventDefault() : undefined}
               className={`
                 relative px-4 py-2 rounded-xl font-medium text-sm
                 transition-all duration-200
+                ${!isClient || version.url === '#' ? 'pointer-events-none opacity-75' : ''}
                 ${isActive 
                   ? `${version.bg} ${version.color} shadow-md` 
                   : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
