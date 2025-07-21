@@ -147,7 +147,8 @@ export default function BGPNetworkChart({
 
     if (tier1Peers.length > 0) addNodesForTier(tier1Peers, 1, 400);
     if (tier2Peers.length > 0) addNodesForTier(tier2Peers, 2, 650);
-    if (tier3Peers.length > 0) addNodesForTier(tier3Peers, 3, 900);
+    // 移除区域ISPs显示以提升性能
+    // if (tier3Peers.length > 0) addNodesForTier(tier3Peers, 3, 900);
 
     return { nodes, links };
   };
@@ -178,8 +179,8 @@ export default function BGPNetworkChart({
     const backgroundAreas = [
       { x: 50, width: 150, label: 'Origins', color: '#22c55e' },
       { x: 300, width: 150, label: 'Tier 1 ISPs', color: '#3b82f6' },
-      { x: 550, width: 150, label: 'Tier 2 ISPs', color: '#f97316' },
-      { x: 800, width: 150, label: 'Regional ISPs', color: '#8b5cf6' }
+      { x: 550, width: 150, label: 'Tier 2 ISPs', color: '#f97316' }
+      // 移除区域ISPs区域以简化显示
     ];
 
     backgroundAreas.forEach(area => {
@@ -452,10 +453,7 @@ export default function BGPNetworkChart({
               <div className="w-4 h-3 rounded bg-orange-500"></div>
               <span className="text-[rgb(var(--color-text-secondary))]">Tier 2 ISPs</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-3 rounded bg-purple-500"></div>
-              <span className="text-[rgb(var(--color-text-secondary))]">区域ISPs</span>
-            </div>
+                         {/* 移除区域ISPs图例 */}
           </div>
           <div className="mt-2 pt-2 border-t text-xs text-[rgb(var(--color-text-muted))]">
             点击节点查看详细信息<br/>
@@ -487,8 +485,8 @@ export default function BGPNetworkChart({
         </div>
       )}
 
-      {/* 统计信息 */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+             {/* 统计信息 */}
+       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-blue-500 rounded"></div>
@@ -511,16 +509,7 @@ export default function BGPNetworkChart({
           <p className="text-xs text-[rgb(var(--color-text-muted))]">区域性大型ISP</p>
         </div>
         
-        <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-purple-500 rounded"></div>
-            <span className="text-sm text-[rgb(var(--color-text-secondary))]">区域ISPs</span>
-          </div>
-          <div className="text-2xl font-bold text-[rgb(var(--color-text-primary))] mt-1">
-            {tier3Count}
-          </div>
-          <p className="text-xs text-[rgb(var(--color-text-muted))]">本地服务提供商</p>
-        </div>
+                 {/* 移除区域ISPs统计卡片 */}
         
         <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
           <div className="flex items-center space-x-2">
