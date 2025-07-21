@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Globe, Wifi } from 'lucide-react';
+import { Search, Globe, Wifi, Sparkles, Zap, Target } from 'lucide-react';
 import { useIPQueryStore } from '@/lib/store';
 import { detectIPVersion, isValidIP } from '@/lib/ip-detection';
 import { motion } from 'framer-motion';
@@ -41,12 +41,12 @@ export default function IPQueryForm() {
   };
 
   const getIPVersionIcon = (ip: string) => {
-    if (!ip) return <Globe className="w-4 h-4" />;
+    if (!ip) return <Globe className="w-5 h-5" />;
     
     const version = detectIPVersion(ip);
-    if (version === 'IPv4') return <Wifi className="w-4 h-4 text-blue-500" />;
-    if (version === 'IPv6') return <Wifi className="w-4 h-4 text-purple-500" />;
-    return <Globe className="w-4 h-4 text-gray-400" />;
+    if (version === 'IPv4') return <Wifi className="w-5 h-5 text-blue-500" />;
+    if (version === 'IPv6') return <Wifi className="w-5 h-5 text-purple-500" />;
+    return <Globe className="w-5 h-5 text-gray-400" />;
   };
 
   return (
@@ -54,7 +54,7 @@ export default function IPQueryForm() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full max-w-2xl mx-auto"
+      className="w-full max-w-3xl mx-auto"
     >
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative">
@@ -64,11 +64,11 @@ export default function IPQueryForm() {
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder="输入IP地址查询，或留空查询当前IP"
             className={`
-              w-full px-6 py-4 pl-12 pr-16 text-lg font-mono
-              bg-white/80 backdrop-blur-sm
-              border-2 rounded-2xl
+              w-full px-8 py-5 pl-14 pr-20 text-xl font-mono
+              bg-white/90 backdrop-blur-sm
+              border-2 rounded-2xl shadow-lg
               transition-all duration-300
-              focus:outline-none focus:ring-0
+              focus:outline-none focus:ring-0 focus:shadow-xl
               ${validationError || error 
                 ? 'border-red-300 focus:border-red-500' 
                 : 'border-gray-200 focus:border-blue-400'
@@ -79,7 +79,7 @@ export default function IPQueryForm() {
           />
           
           {/* IP版本指示器 */}
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+          <div className="absolute left-5 top-1/2 transform -translate-y-1/2">
             {getIPVersionIcon(inputValue)}
           </div>
           
@@ -90,8 +90,8 @@ export default function IPQueryForm() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`
-              absolute right-2 top-1/2 transform -translate-y-1/2
-              px-4 py-2 rounded-xl
+              absolute right-3 top-1/2 transform -translate-y-1/2
+              px-5 py-3 rounded-xl
               transition-all duration-200
               ${isLoading
                 ? 'bg-gray-300 cursor-not-allowed'
@@ -107,7 +107,7 @@ export default function IPQueryForm() {
                 className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
               />
             ) : (
-              <Search className="w-5 h-5" />
+              <Search className="w-6 h-6" />
             )}
           </motion.button>
         </div>
@@ -140,26 +140,35 @@ export default function IPQueryForm() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="mt-6 flex flex-wrap gap-2 justify-center"
+        className="mt-6 flex flex-wrap gap-3 justify-center"
       >
-        <button
+        <motion.button
           onClick={() => handleInputChange('')}
-          className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 rounded-full transition-all duration-200 border border-gray-200 hover:border-gray-300"
         >
-          查询我的IP
-        </button>
-        <button
+          <Target className="w-4 h-4 text-blue-600" />
+          <span className="text-gray-700 font-medium">查询我的IP</span>
+        </motion.button>
+        <motion.button
           onClick={() => handleInputChange('8.8.8.8')}
-          className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-blue-50 hover:bg-blue-100 rounded-full transition-all duration-200 border border-blue-200 hover:border-blue-300"
         >
-          示例IPv4
-        </button>
-        <button
+          <Wifi className="w-4 h-4 text-blue-600" />
+          <span className="text-gray-700 font-medium">示例IPv4</span>
+        </motion.button>
+        <motion.button
           onClick={() => handleInputChange('2001:4860:4860::8888')}
-          className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-purple-50 hover:bg-purple-100 rounded-full transition-all duration-200 border border-purple-200 hover:border-purple-300"
         >
-          示例IPv6
-        </button>
+          <Sparkles className="w-4 h-4 text-purple-600" />
+          <span className="text-gray-700 font-medium">示例IPv6</span>
+        </motion.button>
       </motion.div>
     </motion.div>
   );

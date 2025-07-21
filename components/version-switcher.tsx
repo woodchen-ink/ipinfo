@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wifi, Globe } from 'lucide-react';
+import { Wifi, Globe, Zap, Settings } from 'lucide-react';
 
 export default function VersionSwitcher() {
   const [currentDomain, setCurrentDomain] = useState('');
@@ -57,7 +57,10 @@ export default function VersionSwitcher() {
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-      <span className="text-sm text-gray-600 font-medium">IP版本:</span>
+      <div className="flex items-center space-x-2">
+        <Settings className="w-4 h-4 text-gray-500" />
+        <span className="text-sm text-gray-600 font-medium">IP版本:</span>
+      </div>
       <div className="flex gap-2">
         {versions.map((version) => {
           const isActive = currentVersion === version.id;

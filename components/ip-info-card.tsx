@@ -10,7 +10,15 @@ import {
   Building, 
   Shield,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Server,
+  Network,
+  Router,
+  MapIcon,
+  Zap,
+  Eye,
+  Hash,
+  Flag
 } from 'lucide-react';
 import { IPInfo } from '@/lib/store';
 import { useState, useEffect } from 'react';
@@ -165,32 +173,44 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
             {/* 网络信息 */}
             <motion.div variants={itemVariants} className="space-y-3">
               <div className="flex items-center space-x-2">
-                <Building className="w-5 h-5 text-blue-500" />
+                <Network className="w-5 h-5 text-blue-500" />
                 <h3 className="font-semibold text-gray-900">网络信息</h3>
               </div>
-              <div className="pl-7 space-y-2">
+              <div className="pl-7 space-y-3">
                 {ipData.isp && (
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">运营商</span>
+                    <div className="flex items-center space-x-2">
+                      <Router className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">运营商</span>
+                    </div>
                     <span className="font-medium text-gray-800">{ipData.isp}</span>
                   </div>
                 )}
                 {ipData.net && (
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">ASN</span>
+                    <div className="flex items-center space-x-2">
+                      <Hash className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">ASN</span>
+                    </div>
                     <span className="font-mono text-sm text-gray-800">{ipData.net}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">精度</span>
+                  <div className="flex items-center space-x-2">
+                    <Eye className="w-4 h-4 text-gray-500" />
+                    <span className="text-gray-600">精度</span>
+                  </div>
                   <span className={`
-                    px-2 py-1 rounded-full text-xs font-medium
+                    px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1
                     ${ipData.accuracy === 'high' ? 'bg-green-100 text-green-700' :
                       ipData.accuracy === 'medium' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-red-100 text-red-700'}
                   `}>
-                    {ipData.accuracy === 'high' ? '高精度' :
-                     ipData.accuracy === 'medium' ? '中等精度' : '低精度'}
+                    <Zap className="w-3 h-3" />
+                    <span>
+                      {ipData.accuracy === 'high' ? '高精度' :
+                       ipData.accuracy === 'medium' ? '中等精度' : '低精度'}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -218,23 +238,32 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
             <motion.div variants={itemVariants} className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Shield className="w-5 h-5 text-gray-500" />
-                <h3 className="font-semibold text-gray-900">其他信息</h3>
+                <h3 className="font-semibold text-gray-900">区域代码</h3>
               </div>
-              <div className="pl-7 space-y-2">
+              <div className="pl-7 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">国家代码</span>
-                  <span className="font-mono text-sm text-gray-800">{ipData.countryCode}</span>
+                  <div className="flex items-center space-x-2">
+                    <Flag className="w-4 h-4 text-gray-500" />
+                    <span className="text-gray-600">国家代码</span>
+                  </div>
+                  <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-800">{ipData.countryCode}</span>
                 </div>
                 {ipData.provinceCode && (
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">省份代码</span>
-                    <span className="font-mono text-sm text-gray-800">{ipData.provinceCode}</span>
+                    <div className="flex items-center space-x-2">
+                      <MapIcon className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">省份代码</span>
+                    </div>
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-800">{ipData.provinceCode}</span>
                   </div>
                 )}
                 {ipData.cityCode && (
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">城市代码</span>
-                    <span className="font-mono text-sm text-gray-800">{ipData.cityCode}</span>
+                    <div className="flex items-center space-x-2">
+                      <Building className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">城市代码</span>
+                    </div>
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-800">{ipData.cityCode}</span>
                   </div>
                 )}
               </div>
@@ -248,13 +277,36 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
         variants={itemVariants}
         className="mt-6 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-6"
       >
-        <div className="flex items-center justify-center h-64 bg-gray-50 rounded-xl">
-          <div className="text-center">
-            <Globe className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600">地图组件将在后续版本中集成</p>
-            <p className="text-sm text-gray-500 mt-1">
-              位置: {ipData.location.latitude.toFixed(4)}°, {ipData.location.longitude.toFixed(4)}°
-            </p>
+        <div className="flex items-center justify-center h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl relative overflow-hidden">
+          {/* 装饰性网格背景 */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.1) 1px, transparent 0)`,
+              backgroundSize: '20px 20px'
+            }} />
+          </div>
+          
+          <div className="text-center relative z-10">
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+                delay: 0.3
+              }}
+              className="w-20 h-20 bg-gradient-to-br from-blue-100 to-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+            >
+              <MapPin className="w-10 h-10 text-green-600" />
+            </motion.div>
+            <p className="text-gray-600 font-medium mb-2">地图组件将在后续版本中集成</p>
+            <div className="inline-flex items-center space-x-2 bg-white/80 px-3 py-1.5 rounded-full text-sm text-gray-500">
+              <Globe className="w-4 h-4" />
+              <span>
+                {ipData.location.latitude.toFixed(4)}°, {ipData.location.longitude.toFixed(4)}°
+              </span>
+            </div>
           </div>
         </div>
       </motion.div>
