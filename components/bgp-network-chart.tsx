@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import { ProcessedBGPData, BGPPeer } from '@/lib/bgp-api';
 import { Globe, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
+import ReactCountryFlag from "react-country-flag";
 
 interface NetworkNode {
   id: string;
@@ -45,34 +46,39 @@ export default function BGPNetworkChart({
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
   const [transform, setTransform] = useState(d3.zoomIdentity);
 
-  // 国家代码到国旗和颜色的映射
-  const getCountryInfo = (countryCode: string) => {
-    const countryMap: Record<string, { flag: string; color: string; name: string }> = {
-      'US': { flag: '🇺🇸', color: '#ef4444', name: '美国' },
-      'JP': { flag: '🇯🇵', color: '#f97316', name: '日本' },
-      'EE': { flag: '🇪🇪', color: '#eab308', name: '爱沙尼亚' },
-      'AU': { flag: '🇦🇺', color: '#22c55e', name: '澳大利亚' },
-      'SB': { flag: '🇸🇧', color: '#06b6d4', name: '所罗门群岛' },
-      'CA': { flag: '🇨🇦', color: '#8b5cf6', name: '加拿大' },
-      'CN': { flag: '🇨🇳', color: '#3b82f6', name: '中国' },
-      'DE': { flag: '🇩🇪', color: '#10b981', name: '德国' },
-      'GB': { flag: '🇬🇧', color: '#f59e0b', name: '英国' },
-      'FR': { flag: '🇫🇷', color: '#ef4444', name: '法国' },
-      'NL': { flag: '🇳🇱', color: '#3b82f6', name: '荷兰' },
-      'SG': { flag: '🇸🇬', color: '#10b981', name: '新加坡' },
-      'KR': { flag: '🇰🇷', color: '#8b5cf6', name: '韩国' },
-      'HK': { flag: '🇭🇰', color: '#f97316', name: '香港' }
+  // 国家代码到颜色的映射（用于节点颜色区分）
+  const getCountryColor = (countryCode: string) => {
+    const colorMap: Record<string, string> = {
+      'US': '#ef4444', 'JP': '#f97316', 'EE': '#eab308', 'AU': '#22c55e',
+      'SB': '#06b6d4', 'CA': '#8b5cf6', 'CN': '#3b82f6', 'DE': '#10b981',
+      'GB': '#f59e0b', 'FR': '#ef4444', 'NL': '#3b82f6', 'SG': '#10b981',
+      'KR': '#8b5cf6', 'HK': '#f97316'
     };
-    return countryMap[countryCode] || { flag: '🌐', color: '#6b7280', name: '其他' };
+    return colorMap[countryCode] || '#6b7280';
   };
+
+  // 获取国旗emoji
+  const getCountryFlag = (countryCode: string) => {
+    const flagMap: Record<string, string> = {
+      'US': '🇺🇸', 'JP': '🇯🇵', 'EE': '🇪🇪', 'AU': '🇦🇺',
+      'SB': '🇸🇧', 'CA': '🇨🇦', 'CN': '🇨🇳', 'DE': '🇩🇪',
+      'GB': '🇬🇧', 'FR': '🇫🇷', 'NL': '🇳🇱', 'SG': '🇸🇬',
+      'KR': '🇰🇷', 'HK': '🇭🇰', 'IN': '🇮🇳', 'BR': '🇧🇷',
+      'RU': '🇷🇺', 'IT': '🇮🇹', 'ES': '🇪🇸', 'SE': '🇸🇪',
+      'NO': '🇳🇴', 'FI': '🇫🇮', 'DK': '🇩🇰', 'CH': '🇨🇭',
+      'AT': '🇦🇹', 'BE': '🇧🇪', 'LU': '🇱🇺', 'IE': '🇮🇪'
+    };
+    return flagMap[countryCode] || '🌐';
+  };
+
+// ASN层级分类常量 (基于公开的互联网基础设施数据，更新时间：2024年)
+const TIER1_ASNS = [174, 209, 286, 701, 1239, 1299, 2914, 3257, 3320, 3356, 3491, 5511, 6453, 6461, 6830, 7018, 12956];
+const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
 
   // 获取ASN层级
   const getASNTier = (asn: number) => {
-    const tier1 = [174, 209, 286, 701, 1239, 1299, 2914, 3257, 3320, 3356, 3491, 5511, 6453, 6461, 6830, 7018, 12956];
-    const tier2 = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
-    
-    if (tier1.includes(asn)) return { tier: 'tier1' as const, label: 'Tier 1 ISP', color: '#3b82f6' };
-    if (tier2.includes(asn)) return { tier: 'tier2' as const, label: 'Tier 2 ISP', color: '#f97316' };
+    if (TIER1_ASNS.includes(asn)) return { tier: 'tier1' as const, label: 'Tier 1 ISP', color: '#3b82f6' };
+    if (TIER2_ASNS.includes(asn)) return { tier: 'tier2' as const, label: 'Tier 2 ISP', color: '#f97316' };
     return { tier: 'tier3' as const, label: 'Regional ISP', color: '#8b5cf6' };
   };
 
@@ -116,7 +122,6 @@ export default function BGPNetworkChart({
     const addNodesForTier = (tierPeers: BGPPeer[], layer: number, startX: number) => {
       tierPeers.forEach((peer, index) => {
         const tierInfo = getASNTier(peer.asn);
-        const countryInfo = getCountryInfo(peer.country_code);
         
         const node: NetworkNode = {
           id: `as${peer.asn}`,
@@ -130,7 +135,7 @@ export default function BGPNetworkChart({
           x: startX,
           y: 100 + (index * 80) + (Math.random() - 0.5) * 20, // 添加一些随机偏移避免重叠
           color: tierInfo.color,
-          flag: countryInfo.flag,
+          flag: peer.country_code, // 直接使用国家代码，后续用ReactCountryFlag渲染
           label: tierInfo.label
         };
         nodes.push(node);
@@ -274,13 +279,33 @@ export default function BGPNetworkChart({
       .attr("font-size", "10px")
       .text(d => d.name.length > 12 ? d.name.substring(0, 12) + '...' : d.name);
 
-    // 国家标识
-    nodeGroups.filter(d => !d.isCenter)
-      .append("text")
-      .attr("x", 105)
-      .attr("y", 25)
-      .attr("font-size", "16px")
-      .text(d => d.flag);
+    // 国家标识 - 使用foreignObject嵌入ReactCountryFlag组件
+    nodeGroups.filter((d: NetworkNode) => !d.isCenter && Boolean(d.countryCode) && d.countryCode !== 'XX')
+      .append("foreignObject")
+      .attr("x", 78)
+      .attr("y", 8)
+      .attr("width", 20)
+      .attr("height", 20)
+      .append("xhtml:div")
+      .style("width", "20px")
+      .style("height", "20px")
+      .style("display", "flex")
+      .style("align-items", "center")
+      .style("justify-content", "center")
+      .style("background", "rgba(255,255,255,0.9)")
+      .style("border-radius", "3px")
+      .style("border", "1px solid rgba(0,0,0,0.1)")
+      .each(function(d) {
+        // 使用React渲染ReactCountryFlag组件
+        const div = d3.select(this);
+        if (d.countryCode && d.countryCode.length === 2) {
+          div.html(`
+            <div style="font-size: 12px; line-height: 1;">
+              ${getCountryFlag(d.countryCode)}
+            </div>
+          `);
+        }
+      });
 
     // 添加工具提示
     const tooltip = d3.select('body').append('div')
@@ -479,7 +504,15 @@ export default function BGPNetworkChart({
           <div className="grid md:grid-cols-2 gap-2 text-sm">
             <div><strong>名称:</strong> {selectedNode.name}</div>
             <div><strong>描述:</strong> {selectedNode.description}</div>
-            <div><strong>国家:</strong> {selectedNode.flag} {getCountryInfo(selectedNode.countryCode).name}</div>
+            <div><strong>国家:</strong> 
+              {selectedNode.countryCode && selectedNode.countryCode !== 'XX' ? (
+                <ReactCountryFlag 
+                  countryCode={selectedNode.countryCode} 
+                  svg 
+                  style={{ width: '1em', height: '1em', marginLeft: '0.25rem' }} 
+                />
+              ) : '🌐'} {selectedNode.countryCode}
+            </div>
             <div><strong>层级:</strong> {selectedNode.label || 'Origin'}</div>
           </div>
         </div>
