@@ -36,8 +36,21 @@ export interface IPInfo {
   timezone?: string;
   postal?: string;
   accuracy: "high" | "medium" | "low";
-  source: "MaxMind" | "GeoCN";
+  source: "MaxMind" | "GeoCN" | "MeiTuan";
   ipVersion: "IPv4" | "IPv6";
+  // 美团特有字段
+  meituan?: {
+    areaName?: string; // 区域名称，如"王府井/东单"
+    detail?: string; // 详细地址，如"正义路甲4号-B座"
+    cityPinyin?: string; // 城市拼音
+    openCityName?: string; // 开放城市名
+    isForeign?: boolean; // 是否为境外
+    dpCityId?: number; // 美团城市ID
+    area?: number; // 区域编号
+    parentArea?: number; // 父区域编号
+    fromwhere?: string; // 数据来源标识
+    adcode?: string; // 行政区划代码
+  };
 }
 
 // 状态管理接口
