@@ -2,7 +2,7 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { LatLngTuple, Icon } from 'leaflet';
 import { 
   MapPin, 
@@ -13,7 +13,7 @@ import {
   Shield
 } from 'lucide-react';
 import { IPInfo } from '@/lib/store';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   validateCoordinates, 
   getZoomByAccuracy, 
@@ -37,6 +37,46 @@ const createCustomIcon = (isDark: boolean) => {
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
   });
+};
+
+// 地图视图更新组件
+interface MapViewUpdaterProps {
+  center: LatLngTuple;
+  zoom: number;
+}
+
+const MapViewUpdater: React.FC<MapViewUpdaterProps> = ({ center, zoom }) => {
+  const map = useMap();
+  const prevCenterRef = useRef<LatLngTuple | null>(null);
+
+  useEffect(() => {
+    const [newLat, newLng] = center;
+    const prevCenter = prevCenterRef.current;
+
+    // 检查坐标是否真的发生了变化（避免不必要的更新）
+    if (prevCenter) {
+      const [prevLat, prevLng] = prevCenter;
+      const latDiff = Math.abs(newLat - prevLat);
+      const lngDiff = Math.abs(newLng - prevLng);
+      
+      // 如果坐标变化很小（小于0.001度，约100米），则不更新
+      if (latDiff < 0.001 && lngDiff < 0.001) {
+        return;
+      }
+    }
+
+    // 平滑移动到新位置
+    map.setView(center, zoom, {
+      animate: true,
+      duration: 1.5, // 1.5秒的平滑动画
+      easeLinearity: 0.25
+    });
+
+    // 更新上一次的坐标
+    prevCenterRef.current = center;
+  }, [center, zoom, map]);
+
+  return null;
 };
 
 interface IPLocationMapProps {
@@ -276,6 +316,9 @@ export default function IPLocationMap({ ipData, className = '' }: IPLocationMapP
             maxZoom={tileProvider.maxZoom}
           />
           
+          {/* 地图视图更新组件 */}
+          <MapViewUpdater center={mapCenter} zoom={zoomLevel} />
+          
           <Marker 
             position={mapCenter}
             icon={createCustomIcon(isDark)}
@@ -300,10 +343,14 @@ export default function IPLocationMap({ ipData, className = '' }: IPLocationMapP
           <button 
             className="p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200"
             onClick={() => {
-              // 触发地图重新定位到标记点
+              // 触发地图重新定位到标记点并放大
               const mapElement = document.querySelector('.leaflet-container') as any;
               if (mapElement && mapElement._leaflet_map) {
-                mapElement._leaflet_map.setView(mapCenter, zoomLevel + 1);
+                const map = mapElement._leaflet_map;
+                map.setView(mapCenter, Math.min(zoomLevel + 2, 18), {
+                  animate: true,
+                  duration: 1.0
+                });
               }
             }}
           >
