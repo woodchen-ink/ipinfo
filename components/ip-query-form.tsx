@@ -69,7 +69,7 @@ export default function IPQueryForm() {
           style={style}
         />
       );
-    } catch (error) {
+    } catch (_) {
       return (
         <div 
           className="bg-gray-200 rounded flex items-center justify-center"

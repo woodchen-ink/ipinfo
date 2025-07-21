@@ -17,7 +17,8 @@ export default function ThemeToggle() {
   // 圆形扩散切换主题效果
   const toggleThemeWithAnimation = (event: React.MouseEvent) => {
     // 检查浏览器是否支持 View Transitions API
-    const isAppearanceTransition = (document as any).startViewTransition
+    const docWithTransition = document as unknown as { startViewTransition?: (cb: () => void) => any };
+    const isAppearanceTransition = typeof docWithTransition.startViewTransition === 'function'
         && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (!isAppearanceTransition) {
@@ -36,7 +37,7 @@ export default function ThemeToggle() {
     );
 
     try {
-      const transition = (document as any).startViewTransition(async () => {
+      const transition = docWithTransition.startViewTransition?.(async () => {
         const newTheme = isDark ? "light" : "dark";
         setTheme(newTheme);
 
@@ -65,11 +66,11 @@ export default function ThemeToggle() {
             },
           );
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           console.error("Theme transition error:", err);
           // 错误发生时也没关系，主题已经成功切换
         });
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Failed to start view transition:", e);
       // 发生错误时回退到普通切换
       const newTheme = isDark ? "light" : "dark";

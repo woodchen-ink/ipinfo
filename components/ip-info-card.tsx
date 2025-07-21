@@ -12,7 +12,6 @@ import {
   Shield,
   Copy,
   CheckCircle,
-  Server,
   Network,
   Router,
   MapIcon,
@@ -84,7 +83,9 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
       /^192\.168\./,
       /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
       /^127\./,
-      /^169\.254\./
+      /^169\.254\./,
+      /^0\.0\.0\.0$/,
+      /^255\.255\.255\.255$/,
     ];
 
     // 私有IPv6地址
@@ -133,7 +134,7 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
           title={ipData.country}
         />
       );
-    } catch (error) {
+    } catch (_) {
       return (
         <div 
           className={`bg-gray-200 rounded flex items-center justify-center ${className}`}
