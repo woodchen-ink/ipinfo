@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wifi, Globe, Zap, Settings } from 'lucide-react';
+import { Wifi, Globe, Settings } from 'lucide-react';
 
 export default function VersionSwitcher() {
   const [currentDomain, setCurrentDomain] = useState('');

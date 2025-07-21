@@ -134,7 +134,7 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
           title={ipData.country}
         />
       );
-    } catch (_) {
+    } catch {
       return (
         <div 
           className={`bg-gray-200 rounded flex items-center justify-center ${className}`}
