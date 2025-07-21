@@ -18,11 +18,15 @@ import {
   Zap,
   Eye,
   Hash,
-  Flag
+  Flag,
+  Building2,
+  Server,
+  Layers
 } from 'lucide-react';
 import { IPInfo } from '@/lib/store';
 import { useState, useEffect } from 'react';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
+import LazyIPMap from '@/components/lazy-ip-map';
 
 interface IPInfoCardProps {
   ipData: IPInfo;
@@ -155,12 +159,37 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
     return parts.join(' · ');
   };
 
+  // 格式化区域信息
+  const formatRegions = () => {
+    if (ipData.regions) {
+      return ipData.regions.join(' · ');
+    }
+    return formatLocation();
+  };
+
+  // 格式化简化区域信息
+  const formatRegionsShort = () => {
+    if (ipData.regions_short) {
+      return ipData.regions_short.join(' · ');
+    }
+    return null;
+  };
+
   const getVersionColor = (version: string) => {
     return version === 'IPv4' ? 'text-blue-500' : 'text-purple-500';
   };
 
   const getVersionBg = (version: string) => {
     return version === 'IPv4' ? 'bg-blue-50 dark:bg-blue-950/50' : 'bg-purple-50 dark:bg-purple-950/50';
+  };
+
+  // 获取数据源颜色
+  const getSourceColor = (source: string) => {
+    return source === 'MaxMind' ? 'text-blue-600' : 'text-green-600';
+  };
+
+  const getSourceBg = (source: string) => {
+    return source === 'MaxMind' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30';
   };
 
   const containerVariants = {
@@ -199,6 +228,7 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
               <div className={`p-3 rounded-2xl ${getVersionBg(ipData.ipVersion)} border border-[rgb(var(--color-border))] transition-colors duration-300`}>
                 <Wifi className={`w-6 h-6 ${getVersionColor(ipData.ipVersion)}`} />
               </div>
+              
               <div>
                 <div className="mb-1">
                   <TextGenerateEffect 
@@ -229,12 +259,13 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                       </span>
                     )}
                   </div>
-                  <span className="text-sm text-[rgb(var(--color-text-muted))]">
-                    数据源: {ipData.source}
+                  <span className={`text-sm px-2 py-0.5 rounded-full transition-colors duration-300 ${getSourceBg(ipData.source)} ${getSourceColor(ipData.source)}`}>
+                    {ipData.source}
                   </span>
                 </div>
               </div>
             </div>
+            
             <button
               onClick={() => copyToClipboard(ipData.ip, 'ip')}
               className="p-2 rounded-xl hover:bg-[rgb(var(--color-surface-hover))] transition-colors duration-200"
@@ -257,6 +288,7 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                 <MapPin className="w-5 h-5 text-green-500" />
                 <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">地理位置</h3>
               </div>
+              
               <div className="pl-7 space-y-3">
                 <div className="flex items-center space-x-3">
                   <CountryFlagWithFallback 
@@ -268,9 +300,16 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                       boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}
                   />
-                  <p className="text-lg font-medium text-[rgb(var(--color-text-primary))]">
-                    {formatLocation()}
-                  </p>
+                  <div>
+                    <p className="text-lg font-medium text-[rgb(var(--color-text-primary))]">
+                      {formatRegions()}
+                    </p>
+                    {formatRegionsShort() && (
+                      <p className="text-sm text-[rgb(var(--color-text-secondary))]">
+                        简称: {formatRegionsShort()}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 {ipData.postal && (
                   <p className="text-sm text-[rgb(var(--color-text-secondary))]">
@@ -287,14 +326,52 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
               </div>
             </motion.div>
 
-            {/* 网络信息 */}
+            {/* 网络信息 - 增强ASN展示 */}
             <motion.div variants={itemVariants} className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Network className="w-5 h-5 text-blue-500" />
                 <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">网络信息</h3>
               </div>
               <div className="pl-7 space-y-3">
-                {ipData.isp && (
+                {/* ASN编号 */}
+                {ipData.as?.number && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Hash className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">ASN编号</span>
+                    </div>
+                    <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">
+                      AS{ipData.as.number}
+                    </span>
+                  </div>
+                )}
+                
+                {/* ASN组织 */}
+                {ipData.as?.name && (
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">ASN组织</span>
+                    </div>
+                    <span className="font-medium text-right text-[rgb(var(--color-text-primary))] max-w-xs break-words">
+                      {ipData.as.name}
+                    </span>
+                  </div>
+                )}
+
+                {/* 中文ISP信息 */}
+                {ipData.as?.info && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Router className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">运营商</span>
+                    </div>
+                    <span className="font-medium text-[rgb(var(--color-text-primary))]">{ipData.as.info}</span>
+                  </div>
+                )}
+
+                {/* 传统ISP字段 */}
+                {ipData.isp && !ipData.as?.info && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Router className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
@@ -303,15 +380,30 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                     <span className="font-medium text-[rgb(var(--color-text-primary))]">{ipData.isp}</span>
                   </div>
                 )}
+
+                {/* 网络类型 */}
+                {ipData.type && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Server className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">网络类型</span>
+                    </div>
+                    <span className="font-medium text-[rgb(var(--color-text-primary))]">{ipData.type}</span>
+                  </div>
+                )}
+
+                {/* 网络地址 */}
                 {ipData.net && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Hash className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
-                      <span className="text-[rgb(var(--color-text-secondary))]">ASN</span>
+                      <Layers className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">网络段</span>
                     </div>
                     <span className="font-mono text-sm text-[rgb(var(--color-text-primary))]">{ipData.net}</span>
                   </div>
                 )}
+                
+                {/* 数据精度 */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Eye className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
@@ -351,91 +443,103 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
               </motion.div>
             )}
 
-            {/* 其他信息 */}
-            <motion.div variants={itemVariants} className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-[rgb(var(--color-text-muted))]" />
-                <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">区域代码</h3>
-              </div>
-              <div className="pl-7 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Flag className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
-                    <span className="text-[rgb(var(--color-text-secondary))]">国家代码</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CountryFlagWithFallback 
-                      countryCode={ipData.countryCode} 
-                      style={{
-                        width: '1.2em',
-                        height: '1.2em',
-                        borderRadius: '2px'
-                      }}
-                    />
-                    <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">{ipData.countryCode}</span>
-                  </div>
+            {/* 注册国家信息 */}
+            {ipData.registered_country && (
+              <motion.div variants={itemVariants} className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5 text-[rgb(var(--color-text-muted))]" />
+                  <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">注册信息</h3>
                 </div>
-                {ipData.provinceCode && (
+                <div className="pl-7 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Flag className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">注册国家</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CountryFlagWithFallback 
+                        countryCode={ipData.registered_country.code} 
+                        style={{
+                          width: '1.2em',
+                          height: '1.2em',
+                          borderRadius: '2px'
+                        }}
+                      />
+                      <span className="font-medium text-[rgb(var(--color-text-primary))]">
+                        {ipData.registered_country.name}
+                      </span>
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <MapIcon className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
-                      <span className="text-[rgb(var(--color-text-secondary))]">省份代码</span>
+                      <span className="text-[rgb(var(--color-text-secondary))]">注册代码</span>
                     </div>
-                    <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">{ipData.provinceCode}</span>
+                    <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">
+                      {ipData.registered_country.code}
+                    </span>
                   </div>
-                )}
-                {ipData.cityCode && (
+                </div>
+              </motion.div>
+            )}
+
+            {/* 其他区域代码信息 */}
+            {(ipData.countryCode || ipData.provinceCode || ipData.cityCode) && (
+              <motion.div variants={itemVariants} className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5 text-[rgb(var(--color-text-muted))]" />
+                  <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">区域代码</h3>
+                </div>
+                <div className="pl-7 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Building className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
-                      <span className="text-[rgb(var(--color-text-secondary))]">城市代码</span>
+                      <Flag className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">国家代码</span>
                     </div>
-                    <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">{ipData.cityCode}</span>
+                    <div className="flex items-center space-x-2">
+                      <CountryFlagWithFallback 
+                        countryCode={ipData.countryCode} 
+                        style={{
+                          width: '1.2em',
+                          height: '1.2em',
+                          borderRadius: '2px'
+                        }}
+                      />
+                      <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">{ipData.countryCode}</span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </motion.div>
+                  
+                  {ipData.provinceCode && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <MapIcon className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                        <span className="text-[rgb(var(--color-text-secondary))]">省份代码</span>
+                      </div>
+                      <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">{ipData.provinceCode}</span>
+                    </div>
+                  )}
+                  {ipData.cityCode && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Building className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                        <span className="text-[rgb(var(--color-text-secondary))]">城市代码</span>
+                      </div>
+                      <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">{ipData.cityCode}</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </motion.div>
 
-      {/* 地图占位符 */}
-      <motion.div 
+      {/* 地图组件 */}
+      <motion.div
         variants={itemVariants}
-        className="mt-6 bg-[rgb(var(--color-glass-background))] backdrop-blur-sm rounded-2xl shadow-lg border border-[rgb(var(--color-border))] p-6 transition-colors duration-300"
+        className="mt-6"
       >
-        <div className="flex items-center justify-center h-64 bg-gradient-to-br from-[rgb(var(--color-background-secondary))] to-[rgb(var(--color-surface-hover))] rounded-xl relative overflow-hidden transition-colors duration-300">
-          {/* 装饰性网格背景 */}
-          <div className="absolute inset-0 opacity-20 dark:opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, rgb(var(--color-text-muted)) 1px, transparent 0)`,
-              backgroundSize: '20px 20px'
-            }} />
-          </div>
-          
-          <div className="text-center relative z-10">
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ 
-                type: "spring",
-                stiffness: 200,
-                damping: 20,
-                delay: 0.3
-              }}
-              className="w-20 h-20 bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/40 dark:to-green-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg transition-colors duration-300"
-            >
-              <MapPin className="w-10 h-10 text-green-600 dark:text-green-400" />
-            </motion.div>
-            <p className="text-[rgb(var(--color-text-secondary))] font-medium mb-2">地图组件将在后续版本中集成</p>
-            <div className="inline-flex items-center space-x-2 bg-[rgb(var(--color-surface))]/80 px-3 py-1.5 rounded-full text-sm text-[rgb(var(--color-text-muted))] transition-colors duration-300">
-              <Globe className="w-4 h-4" />
-              <span>
-                {ipData.location.latitude.toFixed(4)}°, {ipData.location.longitude.toFixed(4)}°
-              </span>
-            </div>
-          </div>
-        </div>
+        <LazyIPMap ipData={ipData} />
       </motion.div>
     </motion.div>
   );

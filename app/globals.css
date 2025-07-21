@@ -402,3 +402,68 @@ html.dark {
     display: none !important;
   }
 }
+
+/* Leaflet 地图样式优化 */
+.leaflet-container {
+  @apply font-sans;
+  z-index: 0;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply bg-white dark:bg-gray-800 border-0 shadow-xl;
+  border-radius: 12px !important;
+}
+
+.leaflet-popup-content {
+  @apply text-gray-900 dark:text-gray-100 m-0;
+  font-family: inherit !important;
+}
+
+.leaflet-popup-tip {
+  @apply bg-white dark:bg-gray-800 border-0;
+}
+
+.leaflet-popup-close-button {
+  @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200;
+  font-size: 20px !important;
+  padding: 4px 8px !important;
+}
+
+/* 自定义弹窗样式 */
+.custom-popup .leaflet-popup-content-wrapper {
+  @apply shadow-2xl;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.dark .custom-popup .leaflet-popup-content-wrapper {
+  background: rgba(31, 41, 55, 0.95) !important;
+}
+
+/* 地图控件样式 */
+.leaflet-control-zoom {
+  @apply shadow-lg;
+}
+
+.leaflet-control-zoom a {
+  @apply bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-300;
+  backdrop-filter: blur(8px) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  @apply bg-white dark:bg-gray-800;
+}
+
+/* 地图容器适配暗色主题 */
+.dark .leaflet-container {
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* 地图标记动画 */
+.leaflet-marker-icon {
+  transition: transform 0.3s ease-in-out;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(1.1);
+}
