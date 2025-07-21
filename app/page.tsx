@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Search, AlertTriangle, Loader2 } from 'lucide-react';
-import { useIPQueryStore } from '@/lib/store';
-import IPQueryForm from '@/components/ip-query-form';
-import IPInfoCard from '@/components/ip-info-card';
-import VersionSwitcher from '@/components/version-switcher';
-import ThemeToggle from '@/components/theme-toggle';
+import React, { useEffect } from "react";
+import { motion } from "framer-motion";
+import { Search, AlertTriangle, Loader2 } from "lucide-react";
+import { useIPQueryStore } from "@/lib/store";
+import IPQueryForm from "@/components/ip-query-form";
+import IPInfoCard from "@/components/ip-info-card";
+import VersionSwitcher from "@/components/version-switcher";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default function Home() {
   const { ipData, isLoading, error, executeQuery } = useIPQueryStore();
@@ -28,11 +28,11 @@ export default function Home() {
       {/* 主要内容 */}
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* 顶部导航区域 */}
-        <motion.header 
+        <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex justify-between items-center px-6 py-4"
+          className="flex justify-between items-center px-4 md:px-6 py-3 md:py-4"
         >
           <div className="flex-1"></div>
           <VersionSwitcher />
@@ -43,13 +43,12 @@ export default function Home() {
 
         {/* 主内容区域 - 垂直居中 */}
         <div className="flex-1 flex flex-col justify-center py-8">
-
           {/* 查询表单 */}
-          <motion.section 
+          <motion.section
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="px-6 mb-8"
+            className="px-4 md:px-6 mb-6 md:mb-8"
           >
             <IPQueryForm />
           </motion.section>
@@ -68,7 +67,9 @@ export default function Home() {
               >
                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
               </motion.div>
-              <p className="text-[rgb(var(--color-text-secondary))]">正在查询中...</p>
+              <p className="text-[rgb(var(--color-text-secondary))]">
+                正在查询中...
+              </p>
             </motion.div>
           )}
 
@@ -77,7 +78,7 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="max-w-2xl mx-auto px-6"
+              className="max-w-2xl mx-auto px-4 md:px-6"
             >
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-6 text-center transition-colors duration-300">
                 <motion.div
@@ -88,18 +89,20 @@ export default function Home() {
                 >
                   <AlertTriangle className="w-8 h-8 text-red-500" />
                 </motion.div>
-                <p className="text-red-600 dark:text-red-400 font-medium transition-colors duration-300">{error}</p>
+                <p className="text-red-600 dark:text-red-400 font-medium transition-colors duration-300">
+                  {error}
+                </p>
               </div>
             </motion.div>
           )}
 
           {/* IP信息展示 */}
           {ipData && !isLoading && (
-            <motion.section 
+            <motion.section
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="px-6 w-full"
+              className="px-4 md:px-6 w-full"
             >
               <IPInfoCard ipData={ipData} />
             </motion.section>
@@ -110,16 +113,16 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-12 px-6"
+              className="flex flex-col items-center justify-center py-8 md:py-12 px-4 md:px-6"
             >
               <motion.div
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
-                transition={{ 
+                transition={{
                   delay: 0.2,
                   type: "spring",
                   stiffness: 200,
-                  damping: 20
+                  damping: 20,
                 }}
                 className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-2xl flex items-center justify-center mb-6 transition-colors duration-300"
               >
@@ -133,7 +136,7 @@ export default function Home() {
         </div>
 
         {/* 页脚 */}
-        <motion.footer 
+        <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}

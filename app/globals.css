@@ -303,6 +303,26 @@ body {
   }
 }
 
+/* 移动端触摸优化 */
+@media (max-width: 768px) {
+  /* 确保按钮有足够的触摸区域 */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 优化小屏幕上的间距 */
+  .mobile-spacing {
+    padding: 1rem;
+  }
+  
+  /* 移动端文字换行优化 */
+  .mobile-text-wrap {
+    word-break: break-all;
+    overflow-wrap: break-word;
+  }
+}
+
 /* 主题切换过渡动画 */
 *,
 *::before,
