@@ -28,6 +28,7 @@ import { IPInfo } from '@/lib/store';
 import { useState, useEffect } from 'react';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 import LazyIPMap from '@/components/lazy-ip-map';
+import BGPPeersDialog from '@/components/bgp-peers-dialog';
 import { toast } from "sonner";
 
 interface IPInfoCardProps {
@@ -39,6 +40,8 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
   const [isTracing, setIsTracing] = useState(false);
   const [tracedData, setTracedData] = useState<IPInfo | null>(null);
   const [currentData, setCurrentData] = useState<IPInfo>(ipData);
+  const [isBGPDialogOpen, setIsBGPDialogOpen] = useState(false);
+  const [selectedASN, setSelectedASN] = useState<{ asn: number; name?: string } | null>(null);
 
   // 溯源功能
   const handleTrace = async () => {
@@ -110,6 +113,17 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
     setCurrentData(ipData);
     setTracedData(null);
   }, [ipData]);
+
+  // BGP 对话框处理函数
+  const handleASNClick = (asn: number, name?: string) => {
+    setSelectedASN({ asn, name });
+    setIsBGPDialogOpen(true);
+  };
+
+  const handleBGPDialogClose = () => {
+    setIsBGPDialogOpen(false);
+    setSelectedASN(null);
+  };
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
@@ -450,9 +464,13 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                       <Hash className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
                       <span className="text-[rgb(var(--color-text-secondary))]">ASN编号</span>
                     </div>
-                    <span className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] px-2 py-1 rounded text-[rgb(var(--color-text-primary))] transition-colors duration-300">
+                    <button
+                      onClick={() => handleASNClick(currentData.as!.number!, currentData.as?.name)}
+                      className="font-mono text-sm bg-[rgb(var(--color-surface-hover))] hover:bg-blue-50 dark:hover:bg-blue-900/30 px-2 py-1 rounded text-[rgb(var(--color-text-primary))] hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300 cursor-pointer border border-transparent hover:border-blue-200 dark:hover:border-blue-700"
+                      title="点击查看 BGP 对等关系"
+                    >
                       AS{currentData.as.number}
-                    </span>
+                    </button>
                   </div>
                 )}
                 
@@ -651,6 +669,16 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
       >
         <LazyIPMap ipData={currentData} />
       </motion.div>
+
+      {/* BGP 对等关系对话框 */}
+      {selectedASN && (
+        <BGPPeersDialog
+          asn={selectedASN.asn}
+          asnName={selectedASN.name}
+          isOpen={isBGPDialogOpen}
+          onClose={handleBGPDialogClose}
+        />
+      )}
     </motion.div>
   );
 } 
