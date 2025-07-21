@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import ReactCountryFlag from "react-country-flag";
 import { 
   MapPin, 
   Globe, 
@@ -60,6 +61,87 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
       setTimeout(() => setCopied(''), 2000);
     } catch (err) {
       console.error('复制失败:', err);
+    }
+  };
+
+  // 检查是否为有效的国家代码
+  const isValidCountryCode = (code: string) => {
+    return code && 
+           code.length === 2 && 
+           code !== 'XX' && 
+           code !== '--' && 
+           code.toUpperCase() !== 'PRIVATE' &&
+           code.toUpperCase() !== 'ZZ' &&
+           code !== '**';
+  };
+
+  // 检查是否为私有IP
+  const isPrivateIP = (ip: string) => {
+    // 私有IPv4地址范围
+    const privateIPv4Ranges = [
+      /^10\./,
+      /^192\.168\./,
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+      /^127\./,
+      /^169\.254\./
+    ];
+
+    // 私有IPv6地址
+    const privateIPv6Ranges = [
+      /^::1$/,
+      /^fc[0-9a-f]{2}:/i,
+      /^fd[0-9a-f]{2}:/i,
+      /^fe80:/i
+    ];
+
+    return privateIPv4Ranges.some(range => range.test(ip)) || 
+           privateIPv6Ranges.some(range => range.test(ip));
+  };
+
+  // 国旗组件，带有错误处理
+  const CountryFlagWithFallback = ({ countryCode, style, className = '' }: { 
+    countryCode: string, 
+    style?: React.CSSProperties, 
+    className?: string 
+  }) => {
+    const isPrivate = isPrivateIP(ipData.ip);
+    
+    if (!isValidCountryCode(countryCode) || isPrivate) {
+      return (
+        <div 
+          className={`bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center ${className}`}
+          style={style}
+          title={isPrivate ? "私有地址" : "未知地区"}
+        >
+          {isPrivate ? (
+            <Shield className="w-3 h-3 text-gray-600" />
+          ) : (
+            <Globe className="w-3 h-3 text-gray-500" />
+          )}
+        </div>
+      );
+    }
+    
+    try {
+      return (
+        <ReactCountryFlag 
+          countryCode={countryCode.toUpperCase()} 
+          svg 
+          style={style}
+          className={className}
+          title={ipData.country}
+        />
+      );
+    } catch (error) {
+      return (
+        <div 
+          className={`bg-gray-200 rounded flex items-center justify-center ${className}`}
+          style={style}
+          title="国旗加载失败"
+        >
+          <Globe className="w-3 h-3 text-gray-500" />
+        </div>
+      );
     }
   };
 
@@ -123,7 +205,25 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getVersionColor(ipData.ipVersion)} bg-white`}>
                     {ipData.ipVersion}
                   </span>
-                  <span className="text-sm text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <CountryFlagWithFallback 
+                      countryCode={ipData.countryCode} 
+                      style={{
+                        width: '1.2em',
+                        height: '1.2em',
+                        borderRadius: '2px'
+                      }}
+                    />
+                    <span className="text-sm text-gray-600">
+                      {isPrivateIP(ipData.ip) ? '本地网络' : ipData.country}
+                    </span>
+                    {isPrivateIP(ipData.ip) && (
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        私有
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-500">
                     数据源: {ipData.source}
                   </span>
                 </div>
@@ -151,10 +251,21 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                 <MapPin className="w-5 h-5 text-green-500" />
                 <h3 className="font-semibold text-gray-900">地理位置</h3>
               </div>
-              <div className="pl-7 space-y-2">
-                <p className="text-lg font-medium text-gray-800">
-                  {formatLocation()}
-                </p>
+              <div className="pl-7 space-y-3">
+                <div className="flex items-center space-x-3">
+                  <CountryFlagWithFallback 
+                    countryCode={ipData.countryCode} 
+                    style={{
+                      width: '2em',
+                      height: '2em',
+                      borderRadius: '4px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <p className="text-lg font-medium text-gray-800">
+                    {formatLocation()}
+                  </p>
+                </div>
                 {ipData.postal && (
                   <p className="text-sm text-gray-600">
                     邮编: {ipData.postal}
@@ -246,7 +357,17 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                     <Flag className="w-4 h-4 text-gray-500" />
                     <span className="text-gray-600">国家代码</span>
                   </div>
-                  <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-800">{ipData.countryCode}</span>
+                  <div className="flex items-center space-x-2">
+                    <CountryFlagWithFallback 
+                      countryCode={ipData.countryCode} 
+                      style={{
+                        width: '1.2em',
+                        height: '1.2em',
+                        borderRadius: '2px'
+                      }}
+                    />
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-800">{ipData.countryCode}</span>
+                  </div>
                 </div>
                 {ipData.provinceCode && (
                   <div className="flex items-center justify-between">

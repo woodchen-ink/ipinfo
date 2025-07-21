@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import ReactCountryFlag from "react-country-flag";
 import { Search, Globe, Wifi, Sparkles, Zap, Target } from 'lucide-react';
 import { useIPQueryStore } from '@/lib/store';
 import { detectIPVersion, isValidIP } from '@/lib/ip-detection';
@@ -47,6 +48,28 @@ export default function IPQueryForm() {
     if (version === 'IPv4') return <Wifi className="w-5 h-5 text-blue-500" />;
     if (version === 'IPv6') return <Wifi className="w-5 h-5 text-purple-500" />;
     return <Globe className="w-5 h-5 text-gray-400" />;
+  };
+
+  // 安全的国旗组件
+  const SafeCountryFlag = ({ countryCode, style }: { countryCode: string, style?: React.CSSProperties }) => {
+    try {
+      return (
+        <ReactCountryFlag 
+          countryCode={countryCode} 
+          svg 
+          style={style}
+        />
+      );
+    } catch (error) {
+      return (
+        <div 
+          className="bg-gray-200 rounded flex items-center justify-center"
+          style={style}
+        >
+          <Globe className="w-2 h-2 text-gray-500" />
+        </div>
+      );
+    }
   };
 
   return (
@@ -157,7 +180,17 @@ export default function IPQueryForm() {
           whileTap={{ scale: 0.95 }}
           className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-blue-50 hover:bg-blue-100 rounded-full transition-all duration-200 border border-blue-200 hover:border-blue-300"
         >
-          <Wifi className="w-4 h-4 text-blue-600" />
+          <div className="flex items-center space-x-1.5">
+            <Wifi className="w-4 h-4 text-blue-600" />
+            <SafeCountryFlag 
+              countryCode="US" 
+              style={{
+                width: '1em',
+                height: '1em',
+                borderRadius: '1px'
+              }}
+            />
+          </div>
           <span className="text-gray-700 font-medium">示例IPv4</span>
         </motion.button>
         <motion.button
@@ -166,7 +199,17 @@ export default function IPQueryForm() {
           whileTap={{ scale: 0.95 }}
           className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-purple-50 hover:bg-purple-100 rounded-full transition-all duration-200 border border-purple-200 hover:border-purple-300"
         >
-          <Sparkles className="w-4 h-4 text-purple-600" />
+          <div className="flex items-center space-x-1.5">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <SafeCountryFlag 
+              countryCode="US" 
+              style={{
+                width: '1em',
+                height: '1em',
+                borderRadius: '1px'
+              }}
+            />
+          </div>
           <span className="text-gray-700 font-medium">示例IPv6</span>
         </motion.button>
       </motion.div>
