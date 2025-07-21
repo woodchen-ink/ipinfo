@@ -7,6 +7,7 @@ import { useIPQueryStore } from '@/lib/store';
 import { isValidIP } from '@/lib/ip-detection';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
+import { toast } from "sonner";
 
 export default function IPQueryForm() {
   const [inputValue, setInputValue] = useState('');
@@ -45,7 +46,10 @@ export default function IPQueryForm() {
     
     // 验证IP格式
     if (!isValidIP(trimmedValue)) {
-      setValidationError('请输入有效的IPv4或IPv6地址');
+      toast.error("IP地址格式错误", {
+        description: "请输入有效的IPv4或IPv6地址格式",
+        duration: 3000,
+      });
       return;
     }
     

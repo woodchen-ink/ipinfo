@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "sonner";
 
 // IP信息接口定义
 export interface IPInfo {
@@ -99,12 +100,28 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
         currentQuery: result.ip,
       });
 
+      // 显示成功提示
+      toast.success(`查询成功`, {
+        description: `IP: ${result.ip} - ${result.country}${
+          result.city ? ` · ${result.city}` : ""
+        }`,
+        duration: 3000,
+      });
+
       // 添加到历史记录
       get().addToHistory(result);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "查询失败";
+
       set({
-        error: error instanceof Error ? error.message : "查询失败",
+        error: errorMessage,
         isLoading: false,
+      });
+
+      // 显示错误提示
+      toast.error("查询失败", {
+        description: errorMessage,
+        duration: 4000,
       });
     }
   },

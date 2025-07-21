@@ -27,13 +27,13 @@ import { IPInfo } from '@/lib/store';
 import { useState, useEffect } from 'react';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 import LazyIPMap from '@/components/lazy-ip-map';
+import { toast } from "sonner";
 
 interface IPInfoCardProps {
   ipData: IPInfo;
 }
 
 export default function IPInfoCard({ ipData }: IPInfoCardProps) {
-  const [copied, setCopied] = useState('');
   const [currentTime, setCurrentTime] = useState<string>('');
 
   // Update current time only on client side to avoid hydration mismatch
@@ -61,10 +61,16 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
   const copyToClipboard = async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(type);
-      setTimeout(() => setCopied(''), 2000);
+      toast.success("复制成功", {
+        description: `${type}: ${text}`,
+        duration: 2000,
+      });
     } catch (err) {
       console.error('复制失败:', err);
+      toast.error("复制失败", {
+        description: "无法访问剪贴板，请手动复制",
+        duration: 3000,
+      });
     }
   };
 
@@ -267,14 +273,10 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
             </div>
             
             <button
-              onClick={() => copyToClipboard(ipData.ip, 'ip')}
+              onClick={() => copyToClipboard(ipData.ip, 'IP地址')}
               className="p-2 rounded-xl hover:bg-[rgb(var(--color-surface-hover))] transition-colors duration-200"
             >
-              {copied === 'ip' ? (
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              ) : (
-                <Copy className="w-5 h-5 text-[rgb(var(--color-text-muted))]" />
-              )}
+              <Copy className="w-5 h-5 text-[rgb(var(--color-text-muted))]" />
             </button>
           </div>
         </div>
