@@ -161,7 +161,6 @@ export function PlaceholdersAndVanishInput({
         } else {
           setValue("");
           setAnimating(false);
-          void 0;
         }
       });
     };

@@ -17,8 +17,7 @@ export default function ThemeToggle() {
   // 圆形扩散切换主题效果
   const toggleThemeWithAnimation = (event: React.MouseEvent) => {
     // 检查浏览器是否支持 View Transitions API
-    const docWithTransition = document as unknown as { startViewTransition?: (cb: () => void) => any };
-    const isAppearanceTransition = typeof docWithTransition.startViewTransition === 'function'
+    const isAppearanceTransition = typeof document.startViewTransition === 'function'
         && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (!isAppearanceTransition) {
@@ -37,7 +36,7 @@ export default function ThemeToggle() {
     );
 
     try {
-      const transition = docWithTransition.startViewTransition?.(async () => {
+      const transition = document.startViewTransition?.(async () => {
         const newTheme = isDark ? "light" : "dark";
         setTheme(newTheme);
 
@@ -45,31 +44,33 @@ export default function ThemeToggle() {
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
-      transition.ready
-        .then(() => {
-          const clipPath = [
-            `circle(0px at ${x}px ${y}px)`,
-            `circle(${endRadius}px at ${x}px ${y}px)`,
-          ];
-          document.documentElement.animate(
-            {
-              clipPath: isDark
-                ? [...clipPath].reverse()
-                : clipPath,
-            },
-            {
-              duration: 600,
-              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-              pseudoElement: isDark
-                ? '::view-transition-old(root)'
-                : '::view-transition-new(root)',
-            },
-          );
-        })
-        .catch((err: unknown) => {
-          console.error("Theme transition error:", err);
-          // 错误发生时也没关系，主题已经成功切换
-        });
+      if (transition && typeof transition.ready?.then === 'function') {
+        transition.ready
+          .then(() => {
+            const clipPath = [
+              `circle(0px at ${x}px ${y}px)`,
+              `circle(${endRadius}px at ${x}px ${y}px)`,
+            ];
+            document.documentElement.animate(
+              {
+                clipPath: isDark
+                  ? [...clipPath].reverse()
+                  : clipPath,
+              },
+              {
+                duration: 600,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                pseudoElement: isDark
+                  ? '::view-transition-old(root)'
+                  : '::view-transition-new(root)',
+              },
+            );
+          })
+          .catch((err: unknown) => {
+            console.error("Theme transition error:", err);
+            // 错误发生时也没关系，主题已经成功切换
+          });
+      }
     } catch (e: unknown) {
       console.error("Failed to start view transition:", e);
       // 发生错误时回退到普通切换
