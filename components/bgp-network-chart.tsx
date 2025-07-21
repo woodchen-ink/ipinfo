@@ -279,32 +279,18 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       .attr("font-size", "10px")
       .text(d => d.name.length > 12 ? d.name.substring(0, 12) + '...' : d.name);
 
-    // 国家标识 - 使用foreignObject嵌入ReactCountryFlag组件
+    // 国家标识 - 直接使用SVG text显示emoji国旗
     nodeGroups.filter((d: NetworkNode) => !d.isCenter && Boolean(d.countryCode) && d.countryCode !== 'XX')
-      .append("foreignObject")
-      .attr("x", 78)
-      .attr("y", 8)
-      .attr("width", 20)
-      .attr("height", 20)
-      .append("xhtml:div")
-      .style("width", "20px")
-      .style("height", "20px")
-      .style("display", "flex")
-      .style("align-items", "center")
-      .style("justify-content", "center")
-      .style("background", "rgba(255,255,255,0.9)")
-      .style("border-radius", "3px")
-      .style("border", "1px solid rgba(0,0,0,0.1)")
-      .each(function(d) {
-        // 使用React渲染ReactCountryFlag组件
-        const div = d3.select(this);
-        if (d.countryCode && d.countryCode.length === 2) {
-          div.html(`
-            <div style="font-size: 12px; line-height: 1;">
-              ${getCountryFlag(d.countryCode)}
-            </div>
-          `);
-        }
+      .append("text")
+      .attr("x", 85)
+      .attr("y", 20)
+      .attr("font-size", "14px")
+      .attr("text-anchor", "middle")
+      .style("filter", "drop-shadow(1px 1px 1px rgba(0,0,0,0.5))")
+      .text(d => {
+        const flag = getCountryFlag(d.countryCode);
+        // 如果emoji国旗不可用，显示国家代码
+        return flag !== '🌐' ? flag : d.countryCode;
       });
 
     // 添加工具提示
