@@ -4,6 +4,7 @@ import {
   MaxMindASNResult,
   GeoCNResult,
   GeoIPError,
+  Names,
 } from "./types";
 import { IPInfo } from "../store";
 import { detectIPVersion } from "../ip-detection";
@@ -222,7 +223,7 @@ export class DataMerger {
     // 获取中文名称，如果没有则使用英文
     const getLocalizedName = (names?: Names) => {
       if (!names) return undefined;
-      return names["zh-CN"] || names["zh"] || names["en"];
+      return names["zh-CN"] || names["en"];
     };
 
     return {
