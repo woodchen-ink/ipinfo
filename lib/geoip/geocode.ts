@@ -167,9 +167,6 @@ export class GeocodeService {
 
         if (results.length > 0) {
           const result = results[0];
-          console.log(
-            `Nominatim返回结果: ${result.display_name} (${result.lat}, ${result.lon})`
-          );
           return {
             latitude: parseFloat(result.lat),
             longitude: parseFloat(result.lon),
@@ -178,16 +175,12 @@ export class GeocodeService {
           };
         }
 
-        console.log(`Nominatim未找到 "${query}" 的结果`);
         return null;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        console.warn(`第${attempt + 1}次尝试失败:`, lastError.message);
 
         if (attempt < this.config.maxRetries) {
-          // 指数退避重试
           const delay = Math.pow(2, attempt) * 1000;
-          console.log(`等待${delay}ms后重试...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
