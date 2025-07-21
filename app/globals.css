@@ -131,6 +131,8 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 body {
@@ -254,21 +256,9 @@ body {
 
 /* 滚动条样式 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgb(248 250 252);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgb(203 213 225);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(148 163 184);
+  width: 0;
+  height: 0;
+  display: none; /* WebKit浏览器 */
 }
 
 /* 焦点样式优化 */
@@ -368,4 +358,3 @@ html.dark {
     display: none !important;
   }
 }
-
