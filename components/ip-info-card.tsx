@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { IPInfo } from '@/lib/store';
 import { useState, useEffect } from 'react';
+import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 
 interface IPInfoCardProps {
   ipData: IPInfo;
@@ -198,9 +199,13 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                 <Wifi className={`w-6 h-6 ${getVersionColor(ipData.ipVersion)}`} />
               </div>
               <div>
-                <h1 className="text-3xl font-mono font-bold text-[rgb(var(--color-text-primary))] mb-1">
-                  {ipData.ip}
-                </h1>
+                <div className="mb-1">
+                  <TextGenerateEffect 
+                    words={ipData.ip}
+                    className="text-3xl font-mono font-bold text-[rgb(var(--color-text-primary))]"
+                    duration={0.3}
+                  />
+                </div>
                 <div className="flex items-center space-x-3">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getVersionColor(ipData.ipVersion)} bg-[rgb(var(--color-surface))] dark:bg-[rgb(var(--color-surface-hover))] transition-colors duration-300`}>
                     {ipData.ipVersion}
