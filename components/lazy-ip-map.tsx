@@ -51,7 +51,7 @@ const MapLoadingPlaceholder = ({ className }: { className?: string }) => (
 export default function LazyIPMap({ ipData, className }: LazyIPMapProps) {
   return (
     <MapErrorBoundary>
-      <Suspense fallback={<MapLoadingPlaceholder />}>
+      <Suspense fallback={<MapLoadingPlaceholder className={className} />}>
         <IPLocationMap ipData={ipData} className={className} />
       </Suspense>
     </MapErrorBoundary>

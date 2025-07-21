@@ -21,8 +21,7 @@ import {
   type MapTheme 
 } from '@/lib/geoip/map-types';
 
-// 修复 Leaflet 默认图标问题
-import 'leaflet/dist/leaflet.css';
+// 修复 Leaflet 默认图标问题 - CSS已在layout中全局导入
 
 // 自定义地图标记图标
 const createCustomIcon = (isDark: boolean) => {
@@ -154,9 +153,23 @@ export default function IPLocationMap({ ipData, className = '' }: IPLocationMapP
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className={`bg-[rgb(var(--color-glass-background))] backdrop-blur-sm rounded-2xl shadow-lg border border-[rgb(var(--color-border))] p-6 transition-colors duration-300 ${className}`}
+        className={`bg-[rgb(var(--color-glass-background))] backdrop-blur-sm rounded-2xl shadow-lg border border-[rgb(var(--color-border))] overflow-hidden transition-colors duration-300 ${className}`}
       >
-        <div className="flex items-center justify-center h-64 bg-gradient-to-br from-[rgb(var(--color-background-secondary))] to-[rgb(var(--color-surface-hover))] rounded-xl relative overflow-hidden transition-colors duration-300">
+        {/* 简化头部信息 */}
+        <div className="px-6 py-4 border-b border-[rgb(var(--color-border))] transition-colors duration-300">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-[rgb(var(--color-surface-hover))] transition-colors duration-300">
+              <MapPin className="w-5 h-5 text-gray-500" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">地理位置</h3>
+              <p className="text-sm text-[rgb(var(--color-text-secondary))]">{formatLocation()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 占位符内容 */}
+        <div className="flex items-center justify-center h-64 bg-gradient-to-br from-[rgb(var(--color-background-secondary))] to-[rgb(var(--color-surface-hover))] transition-colors duration-300">
           {/* 装饰性网格背景 */}
           <div className="absolute inset-0 opacity-20 dark:opacity-10">
             <div className="absolute inset-0" style={{
@@ -192,6 +205,18 @@ export default function IPLocationMap({ ipData, className = '' }: IPLocationMapP
                 {isPrivateIP ? '本地网络' : '无有效坐标'}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* 底部信息 */}
+        <div className="px-6 py-3 bg-[rgb(var(--color-surface))] transition-colors duration-300">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-[rgb(var(--color-text-muted))]">
+              数据来源: {ipData.source}
+            </span>
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 transition-colors duration-300">
+              {isPrivateIP ? '本地网络' : '未知位置'}
+            </span>
           </div>
         </div>
       </motion.div>
