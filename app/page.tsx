@@ -7,6 +7,7 @@ import { useIPQueryStore } from '@/lib/store';
 import IPQueryForm from '@/components/ip-query-form';
 import IPInfoCard from '@/components/ip-info-card';
 import VersionSwitcher from '@/components/version-switcher';
+import ThemeToggle from '@/components/theme-toggle';
 
 export default function Home() {
   const { ipData, isLoading, error, executeQuery } = useIPQueryStore();
@@ -17,26 +18,31 @@ export default function Home() {
   }, [executeQuery]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-main transition-colors duration-300">
       {/* 背景装饰 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -right-32 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 -left-32 w-64 h-64 bg-purple-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/4 -right-32 w-64 h-64 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-3xl transition-colors duration-500"></div>
+        <div className="absolute bottom-1/4 -left-32 w-64 h-64 bg-purple-400/20 dark:bg-purple-500/10 rounded-full blur-3xl transition-colors duration-500"></div>
       </div>
 
       {/* 主要内容 */}
       <div className="relative z-10 flex flex-col min-h-screen">
+        {/* 顶部导航区域 */}
+        <motion.header 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex justify-between items-center px-6 py-4"
+        >
+          <div className="flex-1"></div>
+          <VersionSwitcher />
+          <div className="flex-1 flex justify-end">
+            <ThemeToggle />
+          </div>
+        </motion.header>
+
         {/* 主内容区域 - 垂直居中 */}
         <div className="flex-1 flex flex-col justify-center py-8">
-          {/* 版本切换器 */}
-          <motion.section 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="px-6 mb-8"
-          >
-            <VersionSwitcher />
-          </motion.section>
 
           {/* 查询表单 */}
           <motion.section 
@@ -56,13 +62,13 @@ export default function Home() {
               className="flex flex-col items-center justify-center py-12"
             >
               <motion.div
-                className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4"
+                className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300"
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
               >
                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
               </motion.div>
-              <p className="text-gray-600">正在查询中...</p>
+              <p className="text-[rgb(var(--color-text-secondary))]">正在查询中...</p>
             </motion.div>
           )}
 
@@ -73,16 +79,16 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               className="max-w-2xl mx-auto px-6"
             >
-              <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-6 text-center transition-colors duration-300">
                 <motion.div
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                  className="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-300"
                 >
                   <AlertTriangle className="w-8 h-8 text-red-500" />
                 </motion.div>
-                <p className="text-red-600 font-medium">{error}</p>
+                <p className="text-red-600 dark:text-red-400 font-medium transition-colors duration-300">{error}</p>
               </div>
             </motion.div>
           )}
@@ -115,11 +121,11 @@ export default function Home() {
                   stiffness: 200,
                   damping: 20
                 }}
-                className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mb-6"
+                className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-2xl flex items-center justify-center mb-6 transition-colors duration-300"
               >
-                <Search className="w-10 h-10 text-gray-400" />
+                <Search className="w-10 h-10 text-[rgb(var(--color-text-muted))]" />
               </motion.div>
-              <p className="text-gray-600 text-center max-w-md">
+              <p className="text-[rgb(var(--color-text-secondary))] text-center max-w-md">
                 输入IP地址进行查询，或留空查看当前IP信息
               </p>
             </motion.div>
@@ -133,7 +139,7 @@ export default function Home() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-center py-6 px-6 mt-auto"
         >
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-[rgb(var(--color-text-muted))]">
             <p>© 2024 专注于提供精确的IP地理位置信息</p>
           </div>
         </motion.footer>

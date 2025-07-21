@@ -23,8 +23,8 @@ export default function VersionSwitcher() {
       icon: Globe,
       url: baseDomain ? `https://ip.${baseDomain}` : '#',
       description: '自动选择最佳IP版本',
-      color: 'text-gray-600',
-      bg: 'bg-gray-100'
+      color: 'text-gray-600 dark:text-gray-400',
+      bg: 'bg-gray-100 dark:bg-gray-800/50'
     },
     {
       id: 'ipv4',
@@ -32,8 +32,8 @@ export default function VersionSwitcher() {
       icon: Wifi,
       url: baseDomain ? `https://ip4.${baseDomain}` : '#',
       description: '强制使用IPv4查询',
-      color: 'text-blue-600',
-      bg: 'bg-blue-100'
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-100 dark:bg-blue-900/30'
     },
     {
       id: 'ipv6',
@@ -41,8 +41,8 @@ export default function VersionSwitcher() {
       icon: Wifi,
       url: baseDomain ? `https://ip6.${baseDomain}` : '#',
       description: '强制使用IPv6查询',
-      color: 'text-purple-600',
-      bg: 'bg-purple-100'
+      color: 'text-purple-600 dark:text-purple-400',
+      bg: 'bg-purple-100 dark:bg-purple-900/30'
     }
   ];
 
@@ -58,8 +58,8 @@ export default function VersionSwitcher() {
   return (
     <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
       <div className="flex items-center space-x-2">
-        <Settings className="w-4 h-4 text-gray-500" />
-        <span className="text-sm text-gray-600 font-medium">IP版本:</span>
+        <Settings className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+        <span className="text-sm text-[rgb(var(--color-text-secondary))] font-medium">IP版本:</span>
       </div>
       <div className="flex gap-2">
         {versions.map((version) => {
@@ -79,7 +79,7 @@ export default function VersionSwitcher() {
                 ${!isClient || version.url === '#' ? 'pointer-events-none opacity-75' : ''}
                 ${isActive 
                   ? `${version.bg} ${version.color} shadow-md` 
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                  : 'bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text-secondary))] hover:bg-[rgb(var(--color-surface-hover))] border border-[rgb(var(--color-border))]'
                 }
               `}
               title={version.description}

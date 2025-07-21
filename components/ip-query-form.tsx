@@ -88,15 +88,16 @@ export default function IPQueryForm() {
             placeholder="输入IP地址查询，或留空查询当前IP"
             className={`
               w-full px-8 py-5 pl-14 pr-20 text-xl font-mono
-              bg-white/90 backdrop-blur-sm
+              bg-[rgb(var(--color-glass-background))] backdrop-blur-sm
               border-2 rounded-2xl shadow-lg
               transition-all duration-300
               focus:outline-none focus:ring-0 focus:shadow-xl
+              text-[rgb(var(--color-text-primary))]
+              placeholder:text-[rgb(var(--color-text-muted))]
               ${validationError || error 
-                ? 'border-red-300 focus:border-red-500' 
-                : 'border-gray-200 focus:border-blue-400'
+                ? 'border-red-300 dark:border-red-600 focus:border-red-500 dark:focus:border-red-400' 
+                : 'border-[rgb(var(--color-border))] focus:border-blue-400 dark:focus:border-blue-500'
               }
-              placeholder-gray-400
             `}
             disabled={isLoading}
           />
@@ -117,8 +118,8 @@ export default function IPQueryForm() {
               px-5 py-3 rounded-xl
               transition-all duration-200
               ${isLoading
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
+                ? 'bg-[rgb(var(--color-text-muted))] cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500'
               }
               text-white font-medium
             `}
@@ -140,7 +141,7 @@ export default function IPQueryForm() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 text-red-500 text-sm font-medium"
+            className="mt-3 text-red-500 dark:text-red-400 text-sm font-medium transition-colors duration-300"
           >
             {validationError || error}
           </motion.div>
@@ -151,7 +152,7 @@ export default function IPQueryForm() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 text-sm text-gray-600"
+            className="mt-3 text-sm text-[rgb(var(--color-text-secondary))]"
           >
             检测到: {detectIPVersion(inputValue)} 地址
           </motion.div>
@@ -169,19 +170,19 @@ export default function IPQueryForm() {
           onClick={() => handleInputChange('')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 rounded-full transition-all duration-200 border border-gray-200 hover:border-gray-300"
+          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-800/30 dark:hover:to-purple-800/30 rounded-full transition-all duration-200 border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-border-light))]"
         >
-          <Target className="w-4 h-4 text-blue-600" />
-          <span className="text-gray-700 font-medium">查询我的IP</span>
+          <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-[rgb(var(--color-text-secondary))] font-medium">查询我的IP</span>
         </motion.button>
         <motion.button
           onClick={() => handleInputChange('8.8.8.8')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-blue-50 hover:bg-blue-100 rounded-full transition-all duration-200 border border-blue-200 hover:border-blue-300"
+          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/30 rounded-full transition-all duration-200 border border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600"
         >
           <div className="flex items-center space-x-1.5">
-            <Wifi className="w-4 h-4 text-blue-600" />
+            <Wifi className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <SafeCountryFlag 
               countryCode="US" 
               style={{
@@ -191,16 +192,16 @@ export default function IPQueryForm() {
               }}
             />
           </div>
-          <span className="text-gray-700 font-medium">示例IPv4</span>
+          <span className="text-[rgb(var(--color-text-secondary))] font-medium">示例IPv4</span>
         </motion.button>
         <motion.button
           onClick={() => handleInputChange('2001:4860:4860::8888')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-purple-50 hover:bg-purple-100 rounded-full transition-all duration-200 border border-purple-200 hover:border-purple-300"
+          className="flex items-center space-x-2 px-4 py-2.5 text-sm bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-800/30 rounded-full transition-all duration-200 border border-purple-200 dark:border-purple-700 hover:border-purple-300 dark:hover:border-purple-600"
         >
           <div className="flex items-center space-x-1.5">
-            <Sparkles className="w-4 h-4 text-purple-600" />
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             <SafeCountryFlag 
               countryCode="US" 
               style={{
@@ -210,7 +211,7 @@ export default function IPQueryForm() {
               }}
             />
           </div>
-          <span className="text-gray-700 font-medium">示例IPv6</span>
+          <span className="text-[rgb(var(--color-text-secondary))] font-medium">示例IPv6</span>
         </motion.button>
       </motion.div>
     </motion.div>
