@@ -407,46 +407,46 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
   return (
     <div className={`w-full ${className}`}>
       {/* SVG容器 */}
-      <div className="relative w-full overflow-hidden border border-[rgb(var(--color-border))] rounded-lg bg-white transition-colors duration-300">
+      <div className="relative w-full overflow-hidden border border-[rgb(var(--color-border))] rounded-lg bg-[rgb(var(--color-surface))] transition-colors duration-300">
         <svg
           ref={svgRef}
           width="100%"
           height={height}
           viewBox={`0 0 ${width} ${height}`}
           className="w-full"
-          style={{ background: 'white' }}
+          style={{ background: 'rgb(var(--color-surface))' }}
         />
 
         {/* 控制按钮 */}
         <div className="absolute top-4 right-4 flex flex-col gap-2">
           <button
             onClick={handleZoomIn}
-            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-white transition-colors duration-200 flex items-center justify-center"
+            className="w-10 h-10 bg-[rgb(var(--color-surface))]/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-[rgb(var(--color-surface-hover))] transition-colors duration-200 flex items-center justify-center"
           >
             <ZoomIn className="h-4 w-4" />
           </button>
           <button
             onClick={handleZoomOut}
-            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-white transition-colors duration-200 flex items-center justify-center"
+            className="w-10 h-10 bg-[rgb(var(--color-surface))]/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-[rgb(var(--color-surface-hover))] transition-colors duration-200 flex items-center justify-center"
           >
             <ZoomOut className="h-4 w-4" />
           </button>
           <button
             onClick={handleReset}
-            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-white transition-colors duration-200 flex items-center justify-center"
+            className="w-10 h-10 bg-[rgb(var(--color-surface))]/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-[rgb(var(--color-surface-hover))] transition-colors duration-200 flex items-center justify-center"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
           <button
             onClick={handleExport}
-            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-white transition-colors duration-200 flex items-center justify-center"
+            className="w-10 h-10 bg-[rgb(var(--color-surface))]/90 backdrop-blur-sm border border-[rgb(var(--color-border))] rounded-md hover:bg-[rgb(var(--color-surface-hover))] transition-colors duration-200 flex items-center justify-center"
           >
             <Download className="h-4 w-4" />
           </button>
         </div>
 
         {/* 图例 */}
-        <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-[rgb(var(--color-border))] max-w-xs">
+        <div className="absolute bottom-4 left-4 bg-[rgb(var(--color-surface))]/95 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-[rgb(var(--color-border))] max-w-xs">
           <h4 className="font-medium text-sm mb-2 flex items-center gap-1 text-[rgb(var(--color-text-primary))]">
             <Globe className="h-4 w-4" />
             节点类型
