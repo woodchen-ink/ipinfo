@@ -257,7 +257,7 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       .attr("height", d => d.isCenter ? 50 : 40)
       .attr("rx", 6)
       .attr("fill", d => d.color)
-      .attr("stroke", "#ffffff")
+      .attr("stroke", "rgb(var(--color-surface))")
       .attr("stroke-width", 3);
 
     // ASN文本
@@ -298,8 +298,10 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       .attr('class', 'bgp-tooltip')
       .style('position', 'absolute')
       .style('visibility', 'hidden')
-      .style('background', 'rgba(0, 0, 0, 0.8)')
-      .style('color', 'white')
+      .style('background', 'rgb(var(--color-surface))')
+      .style('color', 'rgb(var(--color-text-primary))')
+      .style('border', '1px solid rgb(var(--color-border))')
+      .style('box-shadow', '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)')
       .style('padding', '8px')
       .style('border-radius', '4px')
       .style('font-size', '12px')
