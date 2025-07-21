@@ -2,13 +2,8 @@ import { Reader, ReaderModel, City, Asn } from "@maxmind/geoip2-node";
 import * as mmdb from "mmdb-lib";
 import path from "path";
 import fs from "fs";
-import {
-  GeoCNResult,
-  RawQueryResult,
-  DataSourceInfo,
-  GeoIPError,
-} from "./types";
-import { detectIPVersion, isValidIP } from "../ip-detection";
+import { GeoCNResult, RawQueryResult, GeoIPError } from "./types";
+import { isValidIP } from "../ip-detection";
 
 // 数据库文件路径配置
 const DB_PATH = path.join(process.cwd(), "lib", "data");
@@ -23,7 +18,7 @@ const GEOCN_PATH = path.join(DB_PATH, "GeoCN.mmdb");
 export class GeoIPReader {
   private maxmindCityReader: ReaderModel | null = null;
   private maxmindASNReader: ReaderModel | null = null;
-  private geocnReader: mmdb.Reader<any> | null = null;
+  private geocnReader: mmdb.Reader<Record<string, unknown>> | null = null;
   private initialized = false;
 
   async initialize(): Promise<void> {
@@ -106,7 +101,7 @@ export class GeoIPReader {
       throw new Error("GeoCN数据库文件不存在");
     }
     const buffer = fs.readFileSync(GEOCN_PATH);
-    this.geocnReader = new mmdb.Reader<any>(buffer);
+    this.geocnReader = new mmdb.Reader<Record<string, unknown>>(buffer);
   }
 
   async queryIP(ip: string): Promise<RawQueryResult[]> {

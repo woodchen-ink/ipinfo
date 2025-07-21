@@ -59,7 +59,7 @@ export class GeoIPService {
       const rawResults = await geoIPReader.queryIP(ip);
 
       // 4. 合并数据源
-      const mergedResult = DataMerger.merge(ip, rawResults);
+      const mergedResult = await DataMerger.merge(ip, rawResults);
 
       // 5. 缓存结果
       globalIPCache.set(ip, mergedResult);

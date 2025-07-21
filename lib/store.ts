@@ -13,6 +13,20 @@ export interface IPInfo {
   districtCode?: string;
   isp?: string;
   net?: string;
+  // 新增字段，匹配Python版本的输出结构
+  regions?: string[];
+  regions_short?: string[];
+  type?: string;
+  as?: {
+    number?: number;
+    name?: string;
+    info?: string;
+  };
+  addr?: string;
+  registered_country?: {
+    code: string;
+    name: string;
+  };
   location: {
     latitude: number;
     longitude: number;

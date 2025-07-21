@@ -5,306 +5,376 @@ import {
   GeoCNResult,
   GeoIPError,
   Names,
+  CHINESE_ISP_ASN_MAP,
+  CHINESE_PROVINCES,
+  SPECIAL_REGIONS_MAP,
+  LANGUAGE_PRIORITY,
 } from "./types";
 import { IPInfo } from "../store";
 import { detectIPVersion } from "../ip-detection";
+import { globalGeocodeService } from "./geocode";
 
 /**
  * 数据源合并器
- * 智能合并MaxMind和GeoCN数据源的查询结果
+ * 参考Python版本实现的智能IP信息合并系统
  */
 export class DataMerger {
   /**
-   * 合并多个数据源的查询结果
+   * 主要合并方法 - 相当于Python的get_ip_info函数
    */
-  static merge(ip: string, results: RawQueryResult[]): IPInfo {
+  static async merge(ip: string, results: RawQueryResult[]): Promise<IPInfo> {
     if (results.length === 0) {
       throw new GeoIPError("没有可用的查询结果进行合并", "MERGE_FAILED");
     }
 
-    // 按数据质量排序（精度 * 完整性）
-    const sortedResults = results.sort((a, b) => {
-      const scoreA = a.sourceInfo.accuracy * a.sourceInfo.completeness;
-      const scoreB = b.sourceInfo.accuracy * b.sourceInfo.completeness;
-      return scoreB - scoreA;
-    });
+    // 首先从MaxMind获取基础信息
+    const maxmindResult = results.find(
+      (r) => r.sourceInfo.source === "maxmind"
+    );
+    if (!maxmindResult) {
+      throw new GeoIPError("缺少MaxMind数据源", "MERGE_FAILED");
+    }
 
-    // 获取IP版本
-    const ipVersion = detectIPVersion(ip);
+    // 使用MaxMind数据作为基础
+    const ipInfo = this.getMaxMindInfo(ip, maxmindResult);
 
-    // 中国IP优先使用GeoCN数据
-    const isChineseIP = this.isChineseIP(ip);
-    if (isChineseIP) {
-      const geocnResult = sortedResults.find(
-        (r) => r.sourceInfo.source === "geocn"
-      );
+    // 如果是中国IP且有注册国信息为中国，则使用GeoCN补充数据
+    if (
+      ipInfo.country &&
+      ipInfo.countryCode === "CN" &&
+      (!ipInfo.registered_country || ipInfo.registered_country.code === "CN")
+    ) {
+      const geocnResult = results.find((r) => r.sourceInfo.source === "geocn");
       if (geocnResult) {
-        return this.extractGeoCNData(ip, geocnResult, ipVersion);
+        await this.supplementWithGeoCN(ipInfo, geocnResult);
       }
     }
 
-    // 使用最高质量的数据源作为主要数据
-    const primaryResult = sortedResults[0];
-
-    if (primaryResult.sourceInfo.source === "geocn") {
-      return this.extractGeoCNData(ip, primaryResult, ipVersion);
-    } else {
-      return this.extractMaxMindData(ip, primaryResult, ipVersion);
-    }
+    return ipInfo;
   }
 
   /**
-   * 检查是否为中国IP
+   * 获取MaxMind信息 - 相当于Python的get_maxmind函数
    */
-  private static isChineseIP(ip: string): boolean {
-    // 基于常见的中国IP段进行初步判断
-    // 这是一个简化的实现，实际应该基于查询结果判断
-    const ipNum = this.ipToNumber(ip);
-
-    // 一些常见的中国IP段（简化版本）
-    const chineseRanges = [
-      { start: this.ipToNumber("1.0.1.0"), end: this.ipToNumber("1.0.3.255") },
-      {
-        start: this.ipToNumber("14.0.0.0"),
-        end: this.ipToNumber("14.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("27.0.0.0"),
-        end: this.ipToNumber("27.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("36.0.0.0"),
-        end: this.ipToNumber("36.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("39.0.0.0"),
-        end: this.ipToNumber("39.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("42.0.0.0"),
-        end: this.ipToNumber("42.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("49.0.0.0"),
-        end: this.ipToNumber("49.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("58.0.0.0"),
-        end: this.ipToNumber("58.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("60.0.0.0"),
-        end: this.ipToNumber("60.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("61.0.0.0"),
-        end: this.ipToNumber("61.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("112.0.0.0"),
-        end: this.ipToNumber("112.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("113.0.0.0"),
-        end: this.ipToNumber("113.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("114.0.0.0"),
-        end: this.ipToNumber("114.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("115.0.0.0"),
-        end: this.ipToNumber("115.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("116.0.0.0"),
-        end: this.ipToNumber("116.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("117.0.0.0"),
-        end: this.ipToNumber("117.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("118.0.0.0"),
-        end: this.ipToNumber("118.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("119.0.0.0"),
-        end: this.ipToNumber("119.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("120.0.0.0"),
-        end: this.ipToNumber("120.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("121.0.0.0"),
-        end: this.ipToNumber("121.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("122.0.0.0"),
-        end: this.ipToNumber("122.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("123.0.0.0"),
-        end: this.ipToNumber("123.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("124.0.0.0"),
-        end: this.ipToNumber("124.255.255.255"),
-      },
-      {
-        start: this.ipToNumber("125.0.0.0"),
-        end: this.ipToNumber("125.255.255.255"),
-      },
-    ];
-
-    return chineseRanges.some(
-      (range) => ipNum >= range.start && ipNum <= range.end
-    );
-  }
-
-  /**
-   * 将IP地址转换为数字（仅支持IPv4）
-   */
-  private static ipToNumber(ip: string): number {
-    const parts = ip.split(".");
-    if (parts.length !== 4) return 0;
-
-    return (
-      (parseInt(parts[0]) << 24) +
-      (parseInt(parts[1]) << 16) +
-      (parseInt(parts[2]) << 8) +
-      parseInt(parts[3])
-    );
-  }
-
-  /**
-   * 从GeoCN数据提取标准化的IP信息
-   */
-  private static extractGeoCNData(
-    ip: string,
-    result: RawQueryResult,
-    ipVersion: string
-  ): IPInfo {
-    const data = result.cityData as GeoCNResult;
-
-    return {
-      ip,
-      country: data.country || "中国",
-      countryCode: "CN",
-      province: data.province,
-      city: data.city,
-      district: data.district,
-      isp: data.isp,
-      net: data.type,
-      location: {
-        latitude: data.lat || 0,
-        longitude: data.lng || 0,
-        accuracy_radius: 10, // GeoCN通常有较高的精度
-      },
-      timezone: "Asia/Shanghai",
-      accuracy: "high",
-      source: "GeoCN",
-      ipVersion: ipVersion as "IPv4" | "IPv6",
-    };
-  }
-
-  /**
-   * 从MaxMind数据提取标准化的IP信息
-   */
-  private static extractMaxMindData(
-    ip: string,
-    result: RawQueryResult,
-    ipVersion: string
-  ): IPInfo {
+  private static getMaxMindInfo(ip: string, result: RawQueryResult): IPInfo {
     const cityData = result.cityData as MaxMindCityResult;
     const asnData = result.asnData as MaxMindASNResult;
+    const ipVersion = detectIPVersion(ip);
 
-    // 获取中文名称，如果没有则使用英文
-    const getLocalizedName = (names?: Names) => {
-      if (!names) return undefined;
-      return names["zh-CN"] || names["en"];
-    };
-
-    return {
+    const ipInfo: IPInfo = {
       ip,
-      country: getLocalizedName(cityData.country?.names) || "",
-      countryCode: cityData.country?.isoCode || "",
-      province: getLocalizedName(cityData.subdivisions?.[0]?.names),
-      provinceCode: cityData.subdivisions?.[0]?.isoCode,
-      city: getLocalizedName(cityData.city?.names),
+      country: "",
+      countryCode: "",
       location: {
-        latitude: cityData.location?.latitude || 0,
-        longitude: cityData.location?.longitude || 0,
-        accuracy_radius: cityData.location?.accuracyRadius,
+        latitude: 0,
+        longitude: 0,
       },
-      timezone: cityData.location?.timeZone,
-      postal: cityData.postal?.code,
-      isp: asnData?.autonomousSystemOrganization,
-      net: asnData?.autonomousSystemNumber
-        ? `AS${asnData.autonomousSystemNumber}`
-        : undefined,
-      accuracy: this.calculateAccuracy(cityData),
+      accuracy: "low",
       source: "MaxMind",
       ipVersion: ipVersion as "IPv4" | "IPv6",
     };
-  }
 
-  /**
-   * 计算MaxMind数据的精度等级
-   */
-  private static calculateAccuracy(
-    data: MaxMindCityResult
-  ): "high" | "medium" | "low" {
-    let score = 0;
+    // 处理ASN信息
+    if (asnData) {
+      const asNumber = asnData.autonomousSystemNumber;
+      const asName = asnData.autonomousSystemOrganization;
 
-    // 有详细位置信息
-    if (data.location?.latitude && data.location?.longitude) {
-      score += 2;
+      ipInfo.as = {
+        number: asNumber,
+        name: asName,
+      };
 
-      // 精度半径越小，分数越高
-      if (data.location.accuracyRadius) {
-        if (data.location.accuracyRadius <= 10) score += 2;
-        else if (data.location.accuracyRadius <= 50) score += 1;
+      // 检查是否有中文ISP映射
+      const chineseISP = this.getASInfo(asNumber);
+      if (chineseISP) {
+        ipInfo.as.info = chineseISP;
       }
     }
 
-    // 有城市信息
-    if (data.city?.names) score += 1;
+    // 处理地理位置信息
+    if (cityData?.location) {
+      ipInfo.location = {
+        latitude: cityData.location.latitude || 0,
+        longitude: cityData.location.longitude || 0,
+        accuracy_radius: cityData.location.accuracyRadius,
+      };
+    }
 
-    // 有行政区信息
-    if (data.subdivisions?.[0]?.names) score += 1;
+    // 处理国家信息
+    if (cityData?.country) {
+      const countryCode = cityData.country.isoCode || "";
+      const countryName = this.getCountryName(cityData.country);
 
-    if (score >= 5) return "high";
+      ipInfo.country = countryName;
+      ipInfo.countryCode = countryCode;
+    }
+
+    // 处理注册国家信息
+    if (cityData?.registeredCountry) {
+      const registeredCountryCode = cityData.registeredCountry.isoCode || "";
+      const registeredCountryName = this.getCountryName(
+        cityData.registeredCountry
+      );
+
+      ipInfo.registered_country = {
+        code: registeredCountryCode,
+        name: registeredCountryName,
+      };
+    }
+
+    // 处理区域信息（省市区）
+    const regions = this.extractRegions(cityData);
+    if (regions.length > 0) {
+      ipInfo.regions = regions;
+    }
+
+    // 计算准确性
+    ipInfo.accuracy = this.calculateAccuracy(cityData, false);
+
+    return ipInfo;
+  }
+
+  /**
+   * 使用GeoCN数据补充信息 - 相当于Python的get_cn函数
+   */
+  private static async supplementWithGeoCN(
+    ipInfo: IPInfo,
+    result: RawQueryResult
+  ): Promise<void> {
+    const geocnData = result.cityData as GeoCNResult;
+
+    if (!geocnData) return;
+
+    // 处理区域信息
+    const regions = this.deduplicateRegions([
+      geocnData.province,
+      geocnData.city,
+      geocnData.district,
+    ]);
+
+    if (regions.length > 0) {
+      ipInfo.regions = regions;
+
+      // 生成简化的区域名称
+      const regionsShort = this.deduplicateRegions([
+        this.provinceMatch(geocnData.province || ""),
+        geocnData.city?.replace("市", "") || "",
+        geocnData.district || "",
+      ]);
+
+      if (regionsShort.length > 0) {
+        ipInfo.regions_short = regionsShort;
+      }
+    }
+
+    // 处理坐标信息 - 优先使用GeoCN原始坐标，缺失时调用地理编码服务
+    try {
+      const hasOriginalCoordinates =
+        geocnData.lat &&
+        geocnData.lng &&
+        geocnData.lat !== 0 &&
+        geocnData.lng !== 0;
+
+      const coordinates = await globalGeocodeService.getCoordinates(
+        geocnData.lat,
+        geocnData.lng,
+        geocnData.province,
+        geocnData.city,
+        geocnData.district
+      );
+
+      if (coordinates) {
+        ipInfo.location = {
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          accuracy_radius: coordinates.source === "geocn" ? 1 : 10, // GeoCN原始坐标精度更高
+        };
+
+        // 根据坐标来源调整精度
+        if (coordinates.source === "geocn") {
+          ipInfo.accuracy = "high";
+        } else if (coordinates.source === "nominatim") {
+          ipInfo.accuracy =
+            ipInfo.accuracy === "low" ? "medium" : ipInfo.accuracy;
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "获取坐标信息失败:",
+        error instanceof Error ? error.message : error
+      );
+    }
+
+    // 补充省市区字段
+    ipInfo.province = geocnData.province;
+    ipInfo.city = geocnData.city;
+    ipInfo.district = geocnData.district;
+
+    // 补充ISP信息
+    if (!ipInfo.as) {
+      ipInfo.as = {};
+    }
+    if (geocnData.isp) {
+      ipInfo.as.info = geocnData.isp;
+    }
+
+    // 补充网络类型
+    if (geocnData.type) {
+      ipInfo.type = geocnData.type;
+    }
+
+    // 更新数据源标识
+    ipInfo.source = "GeoCN";
+
+    // GeoCN对中国IP通常有更高精度
+    ipInfo.accuracy = "high";
+  }
+
+  /**
+   * 获取ASN信息 - 相当于Python的get_as_info函数
+   */
+  private static getASInfo(asnNumber?: number): string | undefined {
+    if (!asnNumber) return undefined;
+    return CHINESE_ISP_ASN_MAP[asnNumber];
+  }
+
+  /**
+   * 获取本地化名称 - 相当于Python的get_des函数
+   */
+  private static getLocalizedName(names?: Names): string {
+    if (!names) return "";
+
+    for (const lang of LANGUAGE_PRIORITY) {
+      if (names[lang as keyof Names]) {
+        return names[lang as keyof Names] || "";
+      }
+    }
+
+    return names.en || "";
+  }
+
+  /**
+   * 获取国家名称 - 相当于Python的get_country函数
+   */
+  private static getCountryName(countryData: { names?: Names }): string {
+    const countryName = this.getLocalizedName(countryData.names);
+
+    // 处理特别行政区
+    if (SPECIAL_REGIONS_MAP[countryName]) {
+      return SPECIAL_REGIONS_MAP[countryName];
+    }
+
+    return countryName;
+  }
+
+  /**
+   * 省份匹配 - 相当于Python的province_match函数
+   */
+  private static provinceMatch(provinceName: string): string {
+    for (const province of CHINESE_PROVINCES) {
+      if (provinceName.includes(province)) {
+        return province;
+      }
+    }
+    return "";
+  }
+
+  /**
+   * 去重处理 - 相当于Python的de_duplicate函数
+   */
+  private static deduplicateRegions(regions: (string | undefined)[]): string[] {
+    // 过滤空值
+    const filtered = regions.filter(Boolean) as string[];
+
+    // 去重并保持顺序
+    const result: string[] = [];
+    filtered.forEach((region) => {
+      if (!result.includes(region)) {
+        result.push(region);
+      }
+    });
+
+    return result;
+  }
+
+  /**
+   * 提取区域信息
+   */
+  private static extractRegions(cityData?: MaxMindCityResult): string[] {
+    if (!cityData) return [];
+
+    const regions: string[] = [];
+
+    // 添加行政区划信息
+    if (cityData.subdivisions) {
+      cityData.subdivisions.forEach((subdivision) => {
+        const name = this.getLocalizedName(subdivision.names);
+        if (name) regions.push(name);
+      });
+    }
+
+    // 添加城市信息
+    if (cityData.city) {
+      const cityName = this.getLocalizedName(cityData.city.names);
+      const countryName = cityData.country
+        ? this.getLocalizedName(cityData.country.names)
+        : "";
+
+      // 如果城市名不在最后一个区域中且不在国家名中，则添加
+      if (
+        cityName &&
+        (!regions.length || !regions[regions.length - 1].includes(cityName)) &&
+        !countryName.includes(cityName)
+      ) {
+        regions.push(cityName);
+      }
+    }
+
+    return this.deduplicateRegions(regions);
+  }
+
+  /**
+   * 计算数据精度
+   */
+  private static calculateAccuracy(
+    cityData?: MaxMindCityResult,
+    hasGeocnCoordinates?: boolean
+  ): "high" | "medium" | "low" {
+    if (!cityData) return "low";
+
+    let score = 0;
+
+    // 位置信息 - 如果有GeoCN坐标补充，提升评分
+    if (cityData.location?.latitude && cityData.location?.longitude) {
+      score += hasGeocnCoordinates ? 3 : 2; // GeoCN坐标补充提升评分
+
+      if (cityData.location.accuracyRadius) {
+        if (cityData.location.accuracyRadius <= 10) score += 2;
+        else if (cityData.location.accuracyRadius <= 50) score += 1;
+      }
+    }
+
+    // 城市信息
+    if (cityData.city?.names) score += 1;
+
+    // 行政区信息
+    if (cityData.subdivisions?.[0]?.names) score += 1;
+
+    // GeoCN数据补充额外加分
+    if (hasGeocnCoordinates) score += 1;
+
+    if (score >= 6) return "high";
     if (score >= 3) return "medium";
     return "low";
   }
 
   /**
-   * 补充数据（将次要数据源的信息补充到主要数据中）
+   * 计算网络地址 - 相当于Python的get_addr函数
    */
-  private static supplementData(
-    primary: IPInfo,
-    secondary: RawQueryResult
-  ): void {
-    // 如果主要数据缺少某些字段，可以从次要数据源补充
-    if (secondary.sourceInfo.source === "maxmind" && secondary.asnData) {
-      const asnData = secondary.asnData as MaxMindASNResult;
-      if (!primary.isp && asnData.autonomousSystemOrganization) {
-        primary.isp = asnData.autonomousSystemOrganization;
-      }
-      if (!primary.net && asnData.autonomousSystemNumber) {
-        primary.net = `AS${asnData.autonomousSystemNumber}`;
-      }
-    }
-
-    // 补充时区信息
-    if (!primary.timezone && secondary.sourceInfo.source === "maxmind") {
-      const cityData = secondary.cityData as MaxMindCityResult;
-      if (cityData.location?.timeZone) {
-        primary.timezone = cityData.location.timeZone;
-      }
-    }
+  private static getNetworkAddress(ip: string, prefixLength: number): string {
+    // 这里需要实现IP网络地址计算
+    // 简化实现，实际项目中可能需要更复杂的网络计算
+    return `${ip}/${prefixLength}`;
   }
 }
 
