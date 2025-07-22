@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import ReactCountryFlag from "react-country-flag";
 import { Globe, Wifi, Sparkles, Target } from "lucide-react";
 import { useIPQueryStore } from "@/lib/store";
-import { isValidIP } from "@/lib/ip-detection";
+import { isValidIP, checkPrivateIP } from "@/lib/ip-detection";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { toast } from "sonner";
@@ -50,6 +50,16 @@ export default function IPQueryForm() {
       toast.error("IP地址格式错误", {
         description: "请输入有效的IPv4或IPv6地址格式",
         duration: 3000,
+      });
+      return;
+    }
+
+    // 检查是否为私有或不可达IP地址
+    const privateCheck = checkPrivateIP(trimmedValue);
+    if (privateCheck.isPrivate) {
+      toast.warning(privateCheck.message, {
+        description: privateCheck.description,
+        duration: 5000,
       });
       return;
     }

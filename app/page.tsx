@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { useIPQueryStore } from "@/lib/store";
 import IPQueryForm from "@/components/ip-query-form";
@@ -59,85 +59,74 @@ export default function Home() {
           </motion.section>
 
           {/* 加载状态 */}
-          {isLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-12"
-            >
+          <AnimatePresence mode="wait">
+            {isLoading && (
               <motion.div
-                className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300"
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col items-center justify-center py-12"
               >
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-              </motion.div>
-              <p className="text-[rgb(var(--color-text-secondary))]">
-                正在查询中...
-              </p>
-            </motion.div>
-          )}
-
-          {/* 错误状态 */}
-          {error && !isLoading && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-2xl mx-auto px-4 md:px-6"
-            >
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-6 text-center transition-colors duration-300">
                 <motion.div
-                  initial={{ scale: 0.8 }}
+                  className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300"
+                  initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-300"
                 >
-                  <AlertTriangle className="w-8 h-8 text-red-500" />
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                 </motion.div>
-                <p className="text-red-600 dark:text-red-400 font-medium transition-colors duration-300">
-                  {error}
+                <p className="text-[rgb(var(--color-text-secondary))]">
+                  正在查询中...
                 </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* IP信息展示 */}
-          {ipData && !isLoading && (
-            <motion.section
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="px-4 md:px-6 w-full"
-            >
-              <IPInfoCard ipData={ipData} />
-            </motion.section>
-          )}
-
-          {/* 占位内容（当没有数据时） */}
-          {!ipData && !isLoading && !error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-8 md:py-12 px-4 md:px-6"
-            >
-              <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  delay: 0.2,
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 20,
-                }}
-                className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-2xl flex items-center justify-center mb-6 transition-colors duration-300"
-              >
-                <Search className="w-10 h-10 text-[rgb(var(--color-text-muted))]" />
               </motion.div>
-              <p className="text-[rgb(var(--color-text-secondary))] text-center max-w-md">
-                输入IP地址进行查询，或留空查看当前IP信息
-              </p>
-            </motion.div>
-          )}
+            )}
+
+            {/* IP信息展示 - 移除错误状态显示，只使用toast提示 */}
+            {ipData && !isLoading && (
+              <motion.section
+                key="ip-data"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="px-4 md:px-6 w-full"
+              >
+                <IPInfoCard ipData={ipData} />
+              </motion.section>
+            )}
+
+            {/* 占位内容（当没有数据且不在加载时） */}
+            {!ipData && !isLoading && (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-col items-center justify-center py-8 md:py-12 px-4 md:px-6"
+              >
+                <motion.div
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    delay: 0.2,
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 20,
+                  }}
+                  className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-2xl flex items-center justify-center mb-6 transition-colors duration-300"
+                >
+                  <Search className="w-10 h-10 text-[rgb(var(--color-text-muted))]" />
+                </motion.div>
+                <p className="text-[rgb(var(--color-text-secondary))] text-center max-w-md">
+                  输入IP地址进行查询，或留空查看当前IP信息
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+
         </div>
 
         {/* 页脚 */}

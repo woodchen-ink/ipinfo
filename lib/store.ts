@@ -94,7 +94,12 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
 
   // 执行IP查询
   executeQuery: async (ip?: string) => {
-    set({ isLoading: true, error: null });
+    // 开始查询时清除之前的状态
+    set({
+      isLoading: true,
+      error: null,
+      ipData: null, // 清除之前的IP数据，避免显示旧数据
+    });
 
     try {
       const queryIP = ip || get().currentQuery;
@@ -115,6 +120,7 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
       set({
         ipData: result,
         isLoading: false,
+        error: null, // 确保清除错误状态
         isAutoDetected: !ip,
         currentQuery: result.ip,
       });
@@ -135,9 +141,10 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
       set({
         error: errorMessage,
         isLoading: false,
+        ipData: null, // 确保清除IP数据
       });
 
-      // 显示错误提示
+      // 只显示toast错误提示，不在页面显示错误卡片
       toast.error("查询失败", {
         description: errorMessage,
         duration: 4000,
