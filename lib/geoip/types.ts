@@ -219,7 +219,9 @@ export class GeoIPError extends Error {
       | "DB_NOT_FOUND"
       | "INVALID_IP"
       | "QUERY_FAILED"
-      | "MERGE_FAILED",
+      | "MERGE_FAILED"
+      | "INVALID_DATABASE"
+      | "DOWNLOAD_FAILED",
     public source?: string
   ) {
     super(message);

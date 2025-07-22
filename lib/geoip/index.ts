@@ -4,6 +4,7 @@ import { globalIPCache } from "./cache";
 import { GeoIPError } from "./types";
 import { IPInfo } from "../store";
 import { isPrivateIP, detectIPVersion } from "../ip-detection";
+import { startupCheckService } from "./startup-check";
 
 /**
  * 统一的IP地理位置查询接口
@@ -19,6 +20,7 @@ export class GeoIPService {
     if (this.initialized) return;
 
     try {
+      // 初始化数据库读取器（数据库下载已在middleware中处理）
       await geoIPReader.initialize();
       this.initialized = true;
       console.log("GeoIP服务初始化完成");

@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { Toaster } from "@/components/ui/sonner";
+import DatabaseInitializer from "@/components/database-initializer";
 
 // 字体配置
 const inter = Inter({
@@ -75,6 +76,7 @@ export default function RootLayout({
           {children}
         </div>
         <Toaster />
+        <DatabaseInitializer />
       </body>
     </html>
   );

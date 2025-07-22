@@ -10,7 +10,12 @@ import VersionSwitcher from "@/components/version-switcher";
 import ThemeToggle from "@/components/theme-toggle";
 
 export default function Home() {
-  const { ipData, isLoading, error, executeQuery } = useIPQueryStore();
+  const { 
+    ipData, 
+    isLoading, 
+    error, 
+    executeQuery
+  } = useIPQueryStore();
 
   // 页面加载时自动检测客户端IP
   useEffect(() => {

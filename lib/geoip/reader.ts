@@ -1,9 +1,10 @@
 import { Reader, ReaderModel, City, Asn } from "@maxmind/geoip2-node";
 import * as mmdb from "mmdb-lib";
-import path from "path";
-import fs from "fs";
+import * as path from "path";
+import * as fs from "fs";
 import { GeoCNResult, RawQueryResult, GeoIPError } from "./types";
 import { isValidIP } from "../ip-detection";
+import { databaseDownloader } from "./downloader";
 
 // 数据库文件路径配置
 const DB_PATH = path.join(process.cwd(), "lib", "data");
@@ -25,7 +26,8 @@ export class GeoIPReader {
     if (this.initialized) return;
 
     try {
-      this.validateDatabaseFiles();
+      // 首先检查数据库文件状态
+      await this.ensureDatabasesAvailable();
 
       const [maxmindCity, maxmindASN, geocn] = await Promise.allSettled([
         this.initializeMaxMindCity(),
@@ -58,6 +60,34 @@ export class GeoIPReader {
         }`,
         "DB_NOT_FOUND"
       );
+    }
+  }
+
+  /**
+   * 确保数据库文件可用，如果缺失则自动下载
+   */
+  private async ensureDatabasesAvailable(): Promise<void> {
+    try {
+      // 检查数据库状态
+      const statuses = await databaseDownloader.checkDatabases();
+      const missingDatabases = statuses.filter(
+        (status) => !status.exists || !status.isValid
+      );
+
+      if (missingDatabases.length > 0) {
+        console.log(
+          `检测到 ${missingDatabases.length} 个缺失的数据库文件，开始自动下载...`
+        );
+
+        // 自动下载缺失的数据库
+        await databaseDownloader.downloadMissingDatabases();
+
+        console.log("数据库文件下载完成");
+      }
+    } catch (error) {
+      console.error("数据库文件检查/下载失败:", error);
+      // 如果自动下载失败，回退到原有的验证逻辑
+      this.validateDatabaseFiles();
     }
   }
 
