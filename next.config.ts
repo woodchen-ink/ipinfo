@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   webpack: (config, { isServer }) => {
     // 服务端配置
     if (isServer) {

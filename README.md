@@ -192,3 +192,43 @@ MIT License
 ---
 
 **注意**: 当前版本使用模拟数据进行演示，实际部署时需要集成真实的IP地理位置数据库。
+
+## 🐳 Docker 部署与自动化构建
+
+### 一键构建与推送（GitHub Actions）
+
+本项目已集成 GitHub Actions 自动构建与推送 Docker 镜像到 GitHub Container Registry（ghcr.io）。
+
+- 推送到 master 分支将自动触发构建与推送。
+- 镜像地址格式：`ghcr.io/<your-namespace>/<repo>:latest`
+- 需在仓库 Settings → Secrets 配置 `GHCR_TOKEN`（拥有写入 ghcr.io 权限的 Personal Access Token）。
+
+### 手动本地构建与运行
+
+```bash
+# 构建镜像
+pnpm build
+# 或直接用 Docker 多阶段构建
+
+docker build -t ipinfo:latest .
+
+# 运行容器
+# 如需挂载自定义 MMDB 数据库，可用 -v 参数
+
+docker run -d -p 3000:3000 --name ipinfo \
+  -e NODE_ENV=production \
+  ipinfo:latest
+```
+
+### 生产部署注意事项
+- 镜像基于 Next.js Standalone 模式，体积极小，仅包含必要依赖。
+- 支持 SSR/API 路由，兼容 MMDB 数据库文件。
+- 如需图片优化，建议在 Dockerfile 中安装 sharp。
+- 运行时可通过环境变量注入数据库、API 密钥等配置。
+- 默认监听 3000 端口。
+
+### 目录说明
+- `.next/standalone`：Next.js 生产运行时主目录
+- `.next/static`：静态资源
+- `public/`：公开静态文件
+- `lib/data/`：地理库数据（如 MMDB 文件）

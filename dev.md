@@ -753,3 +753,32 @@ export default function RootLayout({
   );
 }
 ```
+
+## CI/CD 自动化与 Docker 部署说明
+
+### 1. 自动化流程
+- 推送到 master 分支自动触发 GitHub Actions，完成 pnpm install、next build、docker build、docker push。
+- 镜像推送到 ghcr.io，需在仓库 secrets 配置 GHCR_TOKEN。
+
+### 2. Docker 镜像结构
+- 基于 next output: 'standalone'，仅包含最小依赖。
+- 运行时目录结构：
+  - .next/standalone
+  - .next/static
+  - public/
+  - lib/data/（如有 MMDB 数据）
+
+### 3. 环境变量
+- 可通过 docker run -e 注入运行时配置，如数据库、API 密钥等。
+- 默认 NODE_ENV=production。
+
+### 4. 常见问题
+- 镜像体积过大：请确认 .dockerignore 配置，避免无关内容进入镜像。
+- MMDB 数据未加载：请确保 lib/data/ 目录被 COPY。
+- 图片优化报错：如需图片优化，请在 Dockerfile 安装 sharp。
+
+### 5. 本地测试
+- 构建镜像：docker build -t ipinfo:latest .
+- 运行容器：docker run -d -p 3000:3000 ipinfo:latest
+
+---
