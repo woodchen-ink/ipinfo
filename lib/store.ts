@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { toast } from "sonner";
+import { ProxyDetectionResult, detectProxyClient } from "@/lib/ip-detection";
 
 // IP信息接口定义
 export interface IPInfo {
@@ -38,6 +39,8 @@ export interface IPInfo {
   accuracy: "high" | "medium" | "low";
   source: "MaxMind" | "GeoCN" | "MeiTuan";
   ipVersion: "IPv4" | "IPv6";
+  // 代理检测信息
+  proxyDetection?: ProxyDetectionResult;
   // 美团特有字段
   meituan?: {
     areaName?: string; // 区域名称，如"王府井/东单"
@@ -64,10 +67,12 @@ interface IPQueryState {
   isLoading: boolean;
   error: string | null;
   isAutoDetected: boolean;
+  isProxyDetecting: boolean;
 
   // 动作
   setQuery: (query: string) => void;
   executeQuery: (ip?: string) => Promise<void>;
+  executeProxyDetection: () => Promise<void>;
   clearError: () => void;
   addToHistory: (data: IPInfo) => void;
   clearHistory: () => void;
@@ -82,6 +87,7 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
   isLoading: false,
   error: null,
   isAutoDetected: false,
+  isProxyDetecting: false,
 
   // 设置查询内容
   setQuery: (query: string) => set({ currentQuery: query }),
@@ -134,6 +140,72 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
       // 显示错误提示
       toast.error("查询失败", {
         description: errorMessage,
+        duration: 4000,
+      });
+    }
+  },
+
+  // 执行代理检测
+  executeProxyDetection: async () => {
+    set({ isProxyDetecting: true });
+
+    try {
+      // 1. 先获取headers中的IP地址
+      let headerIP: string | null = null;
+      try {
+        const headerResponse = await fetch("/api/query", {
+          method: "GET",
+        });
+        if (headerResponse.ok) {
+          const headerData = await headerResponse.json();
+          headerIP = headerData.ip;
+          console.log("获取到headers IP:", headerIP);
+        }
+      } catch (error) {
+        console.warn("获取headers IP失败:", error);
+      }
+
+      // 2. 执行客户端代理检测（直接调用外部API）
+      const proxyResult: ProxyDetectionResult = await detectProxyClient(
+        headerIP
+      );
+
+      // 更新当前IP数据，添加代理检测信息
+      const currentData = get().ipData;
+      if (currentData) {
+        const updatedData: IPInfo = {
+          ...currentData,
+          proxyDetection: proxyResult,
+        };
+
+        set({
+          ipData: updatedData,
+          isProxyDetecting: false,
+        });
+
+        // 显示检测结果提示
+        const proxyTypeText = {
+          direct: "直连",
+          domestic: "国内代理",
+          foreign: "国外代理",
+          mixed: "混合代理",
+          unknown: "未知",
+        }[proxyResult.proxyType];
+
+        toast.success("代理检测完成", {
+          description: `检测结果: ${proxyTypeText} (置信度: ${Math.round(
+            proxyResult.confidence * 100
+          )}%)`,
+          duration: 4000,
+        });
+      }
+    } catch (error) {
+      console.error("代理检测失败:", error);
+      set({ isProxyDetecting: false });
+
+      toast.error("代理检测失败", {
+        description:
+          error instanceof Error ? error.message : "无法完成代理检测",
         duration: 4000,
       });
     }

@@ -23,13 +23,19 @@ import {
   Building2,
   Server,
   Layers,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  HelpCircle,
+  Shuffle,
 } from "lucide-react";
-import { IPInfo } from "@/lib/store";
+import { IPInfo, useIPQueryStore } from "@/lib/store";
 import { useState, useEffect } from "react";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import LazyIPMap from "@/components/lazy-ip-map";
 import BGPPeersDialog from "@/components/bgp-peers-dialog";
 import { toast } from "sonner";
+import { isPrivateIP } from "@/lib/ip-detection";
 
 interface IPInfoCardProps {
   ipData: IPInfo;
@@ -45,6 +51,9 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
     asn: number;
     name?: string;
   } | null>(null);
+
+  // 获取store中的代理检测状态
+  const { isProxyDetecting, executeProxyDetection } = useIPQueryStore();
 
   // 溯源功能
   const handleTrace = async () => {
@@ -129,6 +138,53 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
   const handleBGPDialogClose = () => {
     setIsBGPDialogOpen(false);
     setSelectedASN(null);
+  };
+
+  // 代理检测处理函数
+  const handleProxyDetection = async () => {
+    if (isProxyDetecting) return;
+    await executeProxyDetection();
+  };
+
+  // 获取代理类型的显示信息
+  const getProxyTypeInfo = (proxyType: string) => {
+    switch (proxyType) {
+      case 'direct':
+        return {
+          text: '直连',
+          icon: CheckCircle,
+          color: 'text-green-600 dark:text-green-400',
+          bgColor: 'bg-green-50 dark:bg-green-900/30'
+        };
+      case 'domestic':
+        return {
+          text: '国内代理',
+          icon: Shield,
+          color: 'text-blue-600 dark:text-blue-400',
+          bgColor: 'bg-blue-50 dark:bg-blue-900/30'
+        };
+      case 'foreign':
+        return {
+          text: '国外代理',
+          icon: Globe,
+          color: 'text-purple-600 dark:text-purple-400',
+          bgColor: 'bg-purple-50 dark:bg-purple-900/30'
+        };
+      case 'mixed':
+        return {
+          text: '混合代理',
+          icon: Shuffle,
+          color: 'text-orange-600 dark:text-orange-400',
+          bgColor: 'bg-orange-50 dark:bg-orange-900/30'
+        };
+      default:
+        return {
+          text: '未知',
+          icon: HelpCircle,
+          color: 'text-gray-600 dark:text-gray-400',
+          bgColor: 'bg-gray-50 dark:bg-gray-900/30'
+        };
+    }
   };
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -412,6 +468,24 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                   </button>
                 )}
 
+              {/* 代理检测按钮 */}
+              {!isPrivateIP(currentData.ip) && (
+                <button
+                  onClick={handleProxyDetection}
+                  disabled={isProxyDetecting}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProxyDetecting ? (
+                    <Loader2 className="w-4 h-4 text-cyan-600 animate-spin" />
+                  ) : (
+                    <Activity className="w-4 h-4 text-cyan-600" />
+                  )}
+                  <span className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
+                    {isProxyDetecting ? "检测中..." : "代理检测"}
+                  </span>
+                </button>
+              )}
+
               {/* 重置按钮 - 仅在已溯源时显示 */}
               {tracedData && (
                 <button
@@ -635,6 +709,91 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                 </div>
               </div>
             </motion.div>
+
+            {/* 代理检测结果 */}
+            {currentData.proxyDetection && (
+              <motion.div
+                variants={itemVariants}
+                className="space-y-4 md:space-y-3 md:col-span-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <Activity className="w-5 h-5 text-cyan-500" />
+                  <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">
+                    代理检测结果
+                  </h3>
+                </div>
+
+                <div className="pl-6 md:pl-7 space-y-4 md:space-y-3">
+                  {/* 检测状态 */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Shield className="w-4 h-4 text-[rgb(var(--color-text-muted))]" />
+                      <span className="text-[rgb(var(--color-text-secondary))]">
+                        连接状态
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {(() => {
+                        const { text, icon: Icon, color, bgColor } = getProxyTypeInfo(currentData.proxyDetection.proxyType);
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${bgColor} ${color}`}>
+                            <Icon className="w-3 h-3" />
+                            <span>{text}</span>
+                          </span>
+                        );
+                      })()}
+                      <span className="text-xs text-[rgb(var(--color-text-muted))]">
+                        置信度: {Math.round(currentData.proxyDetection.confidence * 100)}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* IP对比信息 */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* Headers IP */}
+                    <div className="bg-[rgb(var(--color-surface))] rounded-lg p-3">
+                      <div className="text-xs text-[rgb(var(--color-text-muted))] mb-1">Headers IP</div>
+                      <div className="font-mono text-sm text-[rgb(var(--color-text-primary))]">
+                        {currentData.proxyDetection.headerIP || '未获取'}
+                      </div>
+                    </div>
+
+                    {/* 国内源IP */}
+                    <div className="bg-[rgb(var(--color-surface))] rounded-lg p-3">
+                      <div className="text-xs text-[rgb(var(--color-text-muted))] mb-1">国内源</div>
+                      <div className="font-mono text-sm text-[rgb(var(--color-text-primary))]">
+                        {currentData.proxyDetection.domesticIP || '获取失败'}
+                      </div>
+                    </div>
+
+                    {/* 国外源IP */}
+                    <div className="bg-[rgb(var(--color-surface))] rounded-lg p-3">
+                      <div className="text-xs text-[rgb(var(--color-text-muted))] mb-1">国外源</div>
+                      <div className="font-mono text-sm text-[rgb(var(--color-text-primary))]">
+                        {currentData.proxyDetection.foreignIP || '获取失败'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 检测详情 */}
+                  <div className="text-xs text-[rgb(var(--color-text-muted))] space-y-1">
+                    <p>检测耗时: {currentData.proxyDetection.detectionTime}ms</p>
+                    {currentData.proxyDetection.errors.length > 0 && (
+                      <div>
+                        <p className="text-orange-600 dark:text-orange-400">检测警告:</p>
+                        <ul className="list-disc list-inside ml-2 space-y-1">
+                          {currentData.proxyDetection.errors.map((error, index) => (
+                            <li key={index} className="text-orange-600 dark:text-orange-400">
+                              {error}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* 时区信息 */}
             {currentData.timezone && (
