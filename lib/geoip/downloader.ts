@@ -21,7 +21,6 @@ const DB_CONFIG = {
 // 数据库状态接口
 export interface DatabaseStatus {
   name: string;
-  filepath: string;
   exists: boolean;
   size: number;
   lastModified: Date | null;
@@ -124,7 +123,6 @@ export class DatabaseDownloader {
 
       statuses.push({
         name: filename,
-        filepath,
         exists,
         size,
         lastModified,
