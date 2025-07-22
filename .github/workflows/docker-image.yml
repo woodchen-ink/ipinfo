@@ -2,7 +2,8 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [master]
+    tags:
+      - "v*" # 当推送以 v 开头的标签时触发
   workflow_dispatch:
 
 jobs:
@@ -11,6 +12,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: 获取标签名称
+        id: get_tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -32,8 +37,33 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:latest .
+          docker build -t ghcr.io/${{ github.repository }}:${{ steps.get_tag.outputs.tag }} \
+                       -t ghcr.io/${{ github.repository }}:latest .
 
       - name: Push Docker image
         run: |
+          docker push ghcr.io/${{ github.repository }}:${{ steps.get_tag.outputs.tag }}
           docker push ghcr.io/${{ github.repository }}:latest
+
+      - name: 创建 GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          release_name: Release ${{ steps.get_tag.outputs.tag }}
+          body: |
+            ## 🚀 新版本发布 ${{ steps.get_tag.outputs.tag }}
+
+            ### Docker 镜像
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:${{ steps.get_tag.outputs.tag }}
+            ```
+
+            ### 更新内容
+            - 请查看提交历史了解详细更改
+
+            ---
+            *此版本已自动构建并推送到 GitHub Container Registry*
+          draft: false
+          prerelease: false
