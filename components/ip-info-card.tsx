@@ -24,7 +24,6 @@ import {
   Server,
   Layers,
   Activity,
-  AlertTriangle,
   CheckCircle,
   HelpCircle,
   Shuffle,
@@ -35,7 +34,6 @@ import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import LazyIPMap from "@/components/lazy-ip-map";
 import BGPPeersDialog from "@/components/bgp-peers-dialog";
 import { toast } from "sonner";
-import { isPrivateIP } from "@/lib/ip-detection";
 
 interface IPInfoCardProps {
   ipData: IPInfo;
@@ -52,8 +50,8 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
     name?: string;
   } | null>(null);
 
-  // 获取store中的代理检测状态
-  const { isProxyDetecting, executeProxyDetection } = useIPQueryStore();
+  // 获取store中的代理检测状态和自动检测状态
+  const { isProxyDetecting, executeProxyDetection, isAutoDetected } = useIPQueryStore();
 
   // 溯源功能
   const handleTrace = async () => {
@@ -468,12 +466,13 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                   </button>
                 )}
 
-              {/* 代理检测按钮 */}
-              {!isPrivateIP(currentData.ip) && (
+              {/* 代理检测按钮 - 只在查询用户自己的IP时显示 */}
+              {isAutoDetected && !isPrivateIP(currentData.ip) && (
                 <button
                   onClick={handleProxyDetection}
                   disabled={isProxyDetecting}
                   className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="检测您当前的网络代理状态"
                 >
                   {isProxyDetecting ? (
                     <Loader2 className="w-4 h-4 text-cyan-600 animate-spin" />
@@ -710,8 +709,8 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
               </div>
             </motion.div>
 
-            {/* 代理检测结果 */}
-            {currentData.proxyDetection && (
+            {/* 代理检测结果 - 只在查询用户自己的IP时显示 */}
+            {isAutoDetected && currentData.proxyDetection && (
               <motion.div
                 variants={itemVariants}
                 className="space-y-4 md:space-y-3 md:col-span-2"
