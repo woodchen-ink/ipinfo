@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm build
+RUN mkdir -p public && pnpm build
 
 # --- 运行阶段 ---
 FROM node:20-alpine AS runner
@@ -13,8 +13,9 @@ WORKDIR /app
 # RUN apk add --no-cache --virtual .gyp python3 make g++ && pnpm add sharp && apk del .gyp
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+# 仅当 public 存在时才 COPY
 COPY --from=builder /app/public ./public
-# 可选：复制 MMDB 数据文件（如有）
+# 仅当 lib/data 存在时才 COPY
 COPY --from=builder /app/lib/data ./lib/data
 EXPOSE 3000
 ENV NODE_ENV=production
