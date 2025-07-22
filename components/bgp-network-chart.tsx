@@ -21,6 +21,7 @@ interface NetworkNode {
   color: string;
   flag: string;
   label?: string;
+  protocolType: 'ipv4' | 'ipv6' | 'both';
 }
 
 interface NetworkLink {
@@ -28,10 +29,12 @@ interface NetworkLink {
   target: string;
   sourceNode: NetworkNode;
   targetNode: NetworkNode;
+  protocolType: 'ipv4' | 'ipv6';
 }
 
 interface BGPNetworkChartProps {
   data: ProcessedBGPData;
+  protocolType?: 'ipv4' | 'ipv6' | 'both';
   width?: number;
   height?: number;
   className?: string;
@@ -39,6 +42,7 @@ interface BGPNetworkChartProps {
 
 export default function BGPNetworkChart({ 
   data, 
+  protocolType = 'both',
   width = 1000, 
   height = 600, 
   className = '' 
@@ -90,11 +94,19 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
     const nodes: NetworkNode[] = [];
     const links: NetworkLink[] = [];
 
-    // 获取所有唯一的对等节点
-    const allPeers = new Map<number, BGPPeer>();
-    data.ipv4Peers.forEach(peer => allPeers.set(peer.asn, peer));
-    data.ipv6Peers.forEach(peer => allPeers.set(peer.asn, peer));
-    const uniquePeers = Array.from(allPeers.values());
+    // 根据协议类型筛选对等节点
+    let selectedPeers: BGPPeer[] = [];
+    if (protocolType === 'ipv4') {
+      selectedPeers = data.ipv4Peers;
+    } else if (protocolType === 'ipv6') {
+      selectedPeers = data.ipv6Peers;
+    } else {
+      // 合并IPv4和IPv6数据，但保持协议信息
+      const allPeers = new Map<number, BGPPeer>();
+      data.ipv4Peers.forEach(peer => allPeers.set(peer.asn, peer));
+      data.ipv6Peers.forEach(peer => allPeers.set(peer.asn, peer));
+      selectedPeers = Array.from(allPeers.values());
+    }
 
     // 中心节点
     const centerNode: NetworkNode = {
@@ -110,19 +122,25 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       y: height / 2,
       color: '#22c55e',
       flag: '🎯',
-      label: 'Origin'
+      label: 'Origin',
+      protocolType: 'both'
     };
     nodes.push(centerNode);
 
     // 按层级分组
-    const tier1Peers = uniquePeers.filter(p => getASNTier(p.asn).tier === 'tier1');
-    const tier2Peers = uniquePeers.filter(p => getASNTier(p.asn).tier === 'tier2');
-    const tier3Peers = uniquePeers.filter(p => getASNTier(p.asn).tier === 'tier3');
+    const tier1Peers = selectedPeers.filter(p => getASNTier(p.asn).tier === 'tier1');
+    const tier2Peers = selectedPeers.filter(p => getASNTier(p.asn).tier === 'tier2');
+    const tier3Peers = selectedPeers.filter(p => getASNTier(p.asn).tier === 'tier3');
 
     // 添加层级节点
     const addNodesForTier = (tierPeers: BGPPeer[], layer: number, startX: number) => {
       tierPeers.forEach((peer, index) => {
         const tierInfo = getASNTier(peer.asn);
+        
+        // 确定节点的协议类型
+        const hasIPv4 = data.ipv4Peers.some(p => p.asn === peer.asn);
+        const hasIPv6 = data.ipv6Peers.some(p => p.asn === peer.asn);
+        const nodeProtocolType = hasIPv4 && hasIPv6 ? 'both' : hasIPv6 ? 'ipv6' : 'ipv4';
         
         const node: NetworkNode = {
           id: `as${peer.asn}`,
@@ -134,27 +152,50 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
           tier: tierInfo.tier,
           layer,
           x: startX,
-          y: 100 + (index * 80) + (Math.random() - 0.5) * 20, // 添加一些随机偏移避免重叠
+          y: 100 + (index * 80) + (Math.random() - 0.5) * 20,
           color: tierInfo.color,
-          flag: peer.country_code, // 直接使用国家代码，后续用ReactCountryFlag渲染
-          label: tierInfo.label
+          flag: peer.country_code,
+          label: tierInfo.label,
+          protocolType: nodeProtocolType
         };
         nodes.push(node);
 
         // 创建到中心节点的连接
-        links.push({
-          source: centerNode.id,
-          target: node.id,
-          sourceNode: centerNode,
-          targetNode: node
-        });
+        if (protocolType === 'both') {
+          // 在混合模式下，为IPv4和IPv6分别创建连接
+          if (hasIPv4) {
+            links.push({
+              source: centerNode.id,
+              target: node.id,
+              sourceNode: centerNode,
+              targetNode: node,
+              protocolType: 'ipv4'
+            });
+          }
+          if (hasIPv6) {
+            links.push({
+              source: centerNode.id,
+              target: node.id,
+              sourceNode: centerNode,
+              targetNode: node,
+              protocolType: 'ipv6'
+            });
+          }
+        } else {
+          // 在单一协议模式下，只创建一种连接
+          links.push({
+            source: centerNode.id,
+            target: node.id,
+            sourceNode: centerNode,
+            targetNode: node,
+            protocolType: protocolType
+          });
+        }
       });
     };
 
     if (tier1Peers.length > 0) addNodesForTier(tier1Peers, 1, 400);
     if (tier2Peers.length > 0) addNodesForTier(tier2Peers, 2, 650);
-    // 移除区域ISPs显示以提升性能
-    // if (tier3Peers.length > 0) addNodesForTier(tier3Peers, 3, 900);
 
     return { nodes, links };
   };
@@ -212,10 +253,10 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
         .text(area.label);
     });
 
-    // 添加箭头标记
+    // 添加箭头标记 - IPv4
     const defs = g.append("defs");
     defs.append("marker")
-      .attr("id", "arrowhead")
+      .attr("id", "arrowhead-ipv4")
       .attr("viewBox", "0 -5 10 10")
       .attr("refX", 8)
       .attr("refY", 0)
@@ -224,7 +265,20 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#94a3b8");
+      .attr("fill", "#3b82f6");
+
+    // 添加箭头标记 - IPv6
+    defs.append("marker")
+      .attr("id", "arrowhead-ipv6")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 4)
+      .attr("markerHeight", 4)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "#8b5cf6");
 
     // 绘制连接线
     g.selectAll(".link")
@@ -236,9 +290,10 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       .attr("y1", d => d.sourceNode.y + 25)
       .attr("x2", d => d.targetNode.x)
       .attr("y2", d => d.targetNode.y + 25)
-      .attr("stroke", "#94a3b8")
-      .attr("stroke-width", 2)
-      .attr("marker-end", "url(#arrowhead)");
+      .attr("stroke", d => d.protocolType === 'ipv4' ? "#3b82f6" : "#8b5cf6")
+      .attr("stroke-width", d => d.protocolType === 'ipv4' ? 2 : 1.5)
+      .attr("stroke-dasharray", d => d.protocolType === 'ipv4' ? "none" : "5,5")
+      .attr("marker-end", d => d.protocolType === 'ipv4' ? "url(#arrowhead-ipv4)" : "url(#arrowhead-ipv6)");
 
     // 绘制节点
     const nodeGroups = g.selectAll(".node")
@@ -318,7 +373,8 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
             `<div>${d.name}</div>` +
             `<div>${d.description}</div>` +
             (d.countryCode ? `<div>国家: ${d.countryCode}</div>` : '') +
-            `<div>层级: ${d.label || 'Origin'}</div>`
+            `<div>层级: ${d.label || 'Origin'}</div>` +
+            `<div>协议: ${d.protocolType === 'both' ? 'IPv4/IPv6' : d.protocolType}</div>`
           );
       })
       .on('mousemove', (event) => {
@@ -353,7 +409,7 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       d3.select('body').selectAll('.bgp-tooltip').remove();
     };
 
-  }, [data, transform]);
+  }, [data, protocolType, transform]);
 
   // 控制函数
   const handleZoomIn = () => {
@@ -492,8 +548,27 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
               <div className="w-4 h-3 rounded bg-orange-500"></div>
               <span className="text-[rgb(var(--color-text-secondary))]">Tier 2 ISPs</span>
             </div>
-                         {/* 移除区域ISPs图例 */}
           </div>
+          
+          {/* 协议类型图例 */}
+          {protocolType === 'both' && (
+            <>
+              <div className="mt-3 pt-2 border-t border-[rgb(var(--color-border))]">
+                <h5 className="font-medium text-xs mb-2 text-[rgb(var(--color-text-primary))]">连接类型</h5>
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-1 bg-blue-500"></div>
+                    <span className="text-[rgb(var(--color-text-secondary))]">IPv4 连接</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-1 bg-purple-500" style={{ borderTop: '2px dashed #8b5cf6' }}></div>
+                    <span className="text-[rgb(var(--color-text-secondary))]">IPv6 连接</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          
           <div className="mt-2 pt-2 border-t text-xs text-[rgb(var(--color-text-muted))]">
             点击节点查看详细信息<br/>
             鼠标滚轮缩放，拖拽平移
@@ -528,6 +603,7 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
               ) : '🌐'} {selectedNode.countryCode}
             </div>
             <div><strong>层级:</strong> {selectedNode.label || 'Origin'}</div>
+            <div><strong>协议:</strong> {selectedNode.protocolType === 'both' ? 'IPv4/IPv6' : selectedNode.protocolType}</div>
           </div>
         </div>
       )}
