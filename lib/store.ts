@@ -130,7 +130,7 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
         description: `IP: ${result.ip} - ${result.country}${
           result.city ? ` · ${result.city}` : ""
         }`,
-        duration: 3000,
+        duration: 1000,
       });
 
       // 添加到历史记录
@@ -147,7 +147,7 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
       // 只显示toast错误提示，不在页面显示错误卡片
       toast.error("查询失败", {
         description: errorMessage,
-        duration: 4000,
+        duration: 2000,
       });
     }
   },

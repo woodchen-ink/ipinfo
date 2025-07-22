@@ -74,6 +74,18 @@ export default function IPQueryForm() {
     handleInputChange(e.target.value);
   };
 
+  // 处理"查询我的IP"按钮点击事件
+  const handleQueryMyIP = async () => {
+    // 清空输入框并清除错误状态
+    setInputValue("");
+    setValidationError("");
+    clearError();
+
+    // 设置查询为空字符串并执行查询
+    setQuery("");
+    await executeQuery();
+  };
+
   // 安全的国旗组件
   const SafeCountryFlag = ({
     countryCode,
@@ -170,7 +182,7 @@ export default function IPQueryForm() {
             )}
           </AnimatePresence>
           <motion.button
-            onClick={() => handleInputChange("")}
+            onClick={handleQueryMyIP}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="relative z-10 flex items-center space-x-1.5 md:space-x-2 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full transition-all duration-200 border border-[rgb(var(--color-border))] min-h-[44px] md:min-h-auto"
