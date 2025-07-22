@@ -1,13 +1,8 @@
 node_modules
 .git
 .next/cache
-src
 test
 coverage
 *.log
 *.md
-*.ts
-*.tsx
-*.mjs
-*.cjs
-*.swp 
+*.swp
