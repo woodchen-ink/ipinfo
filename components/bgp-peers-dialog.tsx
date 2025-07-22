@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { fetchBGPPeers, ProcessedBGPData } from '@/lib/bgp-api';
 import BGPNetworkChart from '@/components/bgp-network-chart';
-import { Loader2, AlertCircle, Network, Globe, Hash, Layers, Wifi, WifiOff } from 'lucide-react';
+import { Loader2, AlertCircle, Network, Globe, Hash, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface BGPPeersDialogProps {
@@ -33,22 +33,7 @@ export default function BGPPeersDialog({
   const [error, setError] = useState<string | null>(null);
   const [protocolType, setProtocolType] = useState<ProtocolType>('both');
 
-  // 当对话框打开且 ASN 改变时，获取数据
-  useEffect(() => {
-    if (isOpen && asn) {
-      fetchBGPData();
-    }
-  }, [isOpen, asn]);
-
-  // 当对话框关闭时重置状态
-  useEffect(() => {
-    if (!isOpen) {
-      setBgpData(null);
-      setError(null);
-    }
-  }, [isOpen]);
-
-  const fetchBGPData = async () => {
+  const fetchBGPData = useCallback(async () => {
     if (!asn) return;
     
     setIsLoading(true);
@@ -73,7 +58,22 @@ export default function BGPPeersDialog({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [asn]);
+
+  // 当对话框打开且 ASN 改变时，获取数据
+  useEffect(() => {
+    if (isOpen && asn) {
+      fetchBGPData();
+    }
+  }, [isOpen, asn, fetchBGPData]);
+
+  // 当对话框关闭时重置状态
+  useEffect(() => {
+    if (!isOpen) {
+      setBgpData(null);
+      setError(null);
+    }
+  }, [isOpen]);
 
   const handleRetry = () => {
     fetchBGPData();
@@ -261,7 +261,7 @@ export default function BGPPeersDialog({
                   <div className="max-h-64 overflow-y-auto space-y-2">
                     {(protocolType === 'ipv4' ? bgpData.ipv4Peers :
                       protocolType === 'ipv6' ? bgpData.ipv6Peers :
-                      bgpData.allPeers).slice(0, 20).map((peer, index) => (
+                      bgpData.allPeers).slice(0, 20).map((peer) => (
                       <div 
                         key={peer.asn}
                         className="flex items-center justify-between p-3 bg-[rgb(var(--color-surface-hover))] rounded-lg border border-[rgb(var(--color-border))] transition-colors duration-300"

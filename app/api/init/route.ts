@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { startupCheckService } from "@/lib/geoip/startup-check";
 
 // GET请求：检查初始化状态
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const status = startupCheckService.getStatus();
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST请求：执行数据库初始化
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // 检查是否已经初始化
     if (startupCheckService.isInitialized()) {

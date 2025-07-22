@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import { ProcessedBGPData, BGPPeer } from '@/lib/bgp-api';
 import { Globe, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
@@ -51,16 +51,7 @@ export default function BGPNetworkChart({
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
   const [transform, setTransform] = useState(d3.zoomIdentity);
 
-  // 国家代码到颜色的映射（用于节点颜色区分）
-  const getCountryColor = (countryCode: string) => {
-    const colorMap: Record<string, string> = {
-      'US': '#ef4444', 'JP': '#f97316', 'EE': '#eab308', 'AU': '#22c55e',
-      'SB': '#06b6d4', 'CA': '#8b5cf6', 'CN': '#3b82f6', 'DE': '#10b981',
-      'GB': '#f59e0b', 'FR': '#ef4444', 'NL': '#3b82f6', 'SG': '#10b981',
-      'KR': '#8b5cf6', 'HK': '#f97316'
-    };
-    return colorMap[countryCode] || '#6b7280';
-  };
+
 
   // 获取国旗emoji
   const getCountryFlag = (countryCode: string) => {
@@ -77,18 +68,18 @@ export default function BGPNetworkChart({
   };
 
 // ASN层级分类常量 (基于公开的互联网基础设施数据，更新时间：2024年)
-const TIER1_ASNS = [174, 209, 286, 701, 1239, 1299, 2914, 3257, 3320, 3356, 3491, 5511, 6453, 6461, 6830, 7018, 12956];
-const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
+const TIER1_ASNS = useMemo(() => [174, 209, 286, 701, 1239, 1299, 2914, 3257, 3320, 3356, 3491, 5511, 6453, 6461, 6830, 7018, 12956], []);
+const TIER2_ASNS = useMemo(() => [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871], []);
 
   // 获取ASN层级
-  const getASNTier = (asn: number) => {
+  const getASNTier = useCallback((asn: number) => {
     if (TIER1_ASNS.includes(asn)) return { tier: 'tier1' as const, label: 'Tier 1 ISP', color: '#3b82f6' };
     if (TIER2_ASNS.includes(asn)) return { tier: 'tier2' as const, label: 'Tier 2 ISP', color: '#f97316' };
     return { tier: 'tier3' as const, label: 'Regional ISP', color: '#8b5cf6' };
-  };
+  }, [TIER1_ASNS, TIER2_ASNS]);
 
   // 处理数据并创建层次结构
-  const processData = () => {
+  const processData = useCallback(() => {
     if (!data) return { nodes: [], links: [] };
 
     const nodes: NetworkNode[] = [];
@@ -130,7 +121,7 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
     // 按层级分组
     const tier1Peers = selectedPeers.filter(p => getASNTier(p.asn).tier === 'tier1');
     const tier2Peers = selectedPeers.filter(p => getASNTier(p.asn).tier === 'tier2');
-    const tier3Peers = selectedPeers.filter(p => getASNTier(p.asn).tier === 'tier3');
+
 
     // 添加层级节点
     const addNodesForTier = (tierPeers: BGPPeer[], layer: number, startX: number) => {
@@ -198,7 +189,7 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
     if (tier2Peers.length > 0) addNodesForTier(tier2Peers, 2, 650);
 
     return { nodes, links };
-  };
+  }, [data, protocolType, height, getASNTier]);
 
   // 绘制图表
   useEffect(() => {
@@ -409,7 +400,7 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       d3.select('body').selectAll('.bgp-tooltip').remove();
     };
 
-  }, [data, protocolType, transform]);
+  }, [data, protocolType, transform, processData, height]);
 
   // 控制函数
   const handleZoomIn = () => {
@@ -474,7 +465,7 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
       const encodedSvg = btoa(unescape(encodeURIComponent(svgData)));
       img.src = 'data:image/svg+xml;base64,' + encodedSvg;
       
-    } catch (error) {
+    } catch {
       toast.error("导出失败", {
         description: "请稍后重试",
         duration: 3000,
@@ -486,7 +477,6 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
   const { nodes } = processData();
   const tier1Count = nodes.filter(n => n.tier === 'tier1').length;
   const tier2Count = nodes.filter(n => n.tier === 'tier2').length;
-  const tier3Count = nodes.filter(n => n.tier === 'tier3').length;
 
   return (
     <div className={`w-full ${className}`}>

@@ -4,7 +4,6 @@ import { globalIPCache } from "./cache";
 import { GeoIPError } from "./types";
 import { IPInfo } from "../store";
 import { isPrivateIP, detectIPVersion } from "../ip-detection";
-import { startupCheckService } from "./startup-check";
 
 /**
  * 统一的IP地理位置查询接口

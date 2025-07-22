@@ -263,13 +263,7 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
     return parts.join(" · ");
   };
 
-  // 格式化区域信息
-  const formatRegions = () => {
-    if (currentData.regions) {
-      return currentData.regions.join(" · ");
-    }
-    return formatLocation();
-  };
+
 
   // 格式化简化区域信息
   const formatRegionsShort = () => {

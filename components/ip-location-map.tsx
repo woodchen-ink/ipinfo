@@ -6,6 +6,13 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { LatLngTuple, Icon } from "leaflet";
 import { MapPin, Globe, Copy, CheckCircle, ZoomIn, Shield } from "lucide-react";
 import { IPInfo } from "@/lib/store";
+
+// 定义Leaflet地图元素的类型
+interface LeafletMapElement extends HTMLElement {
+  _leaflet_map?: {
+    setView: (center: LatLngTuple, zoom: number, options?: { animate: boolean; duration: number }) => void;
+  };
+}
 import { useState, useEffect, useRef } from "react";
 import {
   validateCoordinates,
@@ -189,7 +196,7 @@ export default function IPLocationMap({
       : ipData.accuracy === "medium"
       ? "中等精度"
       : "低精度";
-  }, [ipData.location.accuracy_radius, ipData.accuracy]);
+  }, [ipData.location, ipData.accuracy]);
 
   // 无效坐标或私有IP的占位符组件
   if (!isValidCoordinates || isPrivateIP) {
@@ -358,7 +365,7 @@ export default function IPLocationMap({
               // 触发地图重新定位到标记点并放大
               const mapElement = document.querySelector(
                 ".leaflet-container"
-              ) as any;
+              ) as LeafletMapElement;
               if (mapElement && mapElement._leaflet_map) {
                 const map = mapElement._leaflet_map;
                 map.setView(mapCenter, Math.min(zoomLevel + 2, 18), {

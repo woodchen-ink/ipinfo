@@ -2,9 +2,7 @@ import {
   databaseDownloader,
   DatabaseStatus,
   DownloadProgress,
-  DownloadEvent,
 } from "./downloader";
-import { GeoIPError } from "./types";
 
 // 启动检测状态
 export interface StartupCheckStatus {

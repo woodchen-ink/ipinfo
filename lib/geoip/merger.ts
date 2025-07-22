@@ -169,12 +169,6 @@ export class DataMerger {
 
     // 处理坐标信息 - 优先使用GeoCN原始坐标，缺失时调用地理编码服务
     try {
-      const hasOriginalCoordinates =
-        geocnData.lat &&
-        geocnData.lng &&
-        geocnData.lat !== 0 &&
-        geocnData.lng !== 0;
-
       const coordinates = await globalGeocodeService.getCoordinates(
         geocnData.lat,
         geocnData.lng,
