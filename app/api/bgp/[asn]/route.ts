@@ -25,10 +25,10 @@ interface BGPPeersResponse {
 // GET请求：代理BGP API查询
 export async function GET(
   request: NextRequest,
-  { params }: { params: { asn: string } }
+  context: { params: { asn: string } }
 ) {
   try {
-    const { asn } = params;
+    const { asn } = context.params;
 
     // 验证 ASN 格式
     const asnNumber = parseInt(asn, 10);
