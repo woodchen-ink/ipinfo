@@ -5,6 +5,7 @@ import * as d3 from 'd3';
 import { ProcessedBGPData, BGPPeer } from '@/lib/bgp-api';
 import { Globe, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
 import ReactCountryFlag from "react-country-flag";
+import { toast } from "sonner";
 
 interface NetworkNode {
   id: string;
@@ -378,26 +379,51 @@ const TIER2_ASNS = [2497, 6939, 9370, 17676, 25820, 59105, 137409, 215871];
   };
 
   const handleExport = () => {
-    const svgElement = svgRef.current;
-    if (!svgElement) return;
-    
-    const svgData = new XMLSerializer().serializeToString(svgElement);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    canvas.width = width;
-    canvas.height = height;
-    
-    img.onload = () => {
-      ctx!.drawImage(img, 0, 0);
-      const link = document.createElement('a');
-      link.download = `asn-${data.centerAsn}-topology.png`;
-      link.href = canvas.toDataURL();
-      link.click();
-    };
-    
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+    try {
+      const svgElement = svgRef.current;
+      if (!svgElement) return;
+      
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      // 使用2倍尺寸确保内容完整显示
+      const exportWidth = width * 2;
+      const exportHeight = height * 2;
+      
+      canvas.width = exportWidth;
+      canvas.height = exportHeight;
+      
+      // 设置高质量图像
+      ctx!.imageSmoothingEnabled = true;
+      ctx!.imageSmoothingQuality = 'high';
+      
+      img.onload = () => {
+        ctx!.drawImage(img, 0, 0, exportWidth, exportHeight);
+        const link = document.createElement('a');
+        link.download = `asn-${data.centerAsn}-topology.png`;
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+      };
+      
+      img.onerror = () => {
+        toast.error("图片生成失败", {
+          description: "请稍后重试",
+          duration: 3000,
+        });
+      };
+      
+      // Unicode 字符编码处理
+      const encodedSvg = btoa(unescape(encodeURIComponent(svgData)));
+      img.src = 'data:image/svg+xml;base64,' + encodedSvg;
+      
+    } catch (error) {
+      toast.error("导出失败", {
+        description: "请稍后重试",
+        duration: 3000,
+      });
+    }
   };
 
   // 统计信息
