@@ -19,6 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://ipinfo.czl.net'),
   title: {
     default: "IP地理位置查询工具 - 精确查询IPv4/IPv6地址信息",
     template: "%s | IP查询工具"
