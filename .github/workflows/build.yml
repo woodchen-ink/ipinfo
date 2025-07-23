@@ -65,11 +65,11 @@ jobs:
           script: |
 
             # 拉取镜像
-            docker pull ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            docker pull ghcr.io/woodchen-ink/ipinfo:latest
 
             # 停止并删除容器
-            docker stop ${{ env.IMAGE_NAME }} || true
-            docker rm ${{ env.IMAGE_NAME }} || true
+            docker stop ipinfo || true
+            docker rm ipinfo || true
 
             # 启动容器
-            docker compose -f /opt/1panel/docker/compose/${{ env.IMAGE_NAME }}/docker-compose.yml up -d
+            docker compose -f /opt/1panel/docker/compose/ipinfo/docker-compose.yml up -d
