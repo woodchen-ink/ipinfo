@@ -15,20 +15,27 @@ export const TextGenerateEffect = ({
   duration?: number;
 }) => {
   const [scope, animate] = useAnimate();
-  const wordsArray = words.split(" ");
+  // 确保words不为空，避免split方法出错
+  const safeWords = words || "";
+  const wordsArray = safeWords.split(" ");
   useEffect(() => {
-    animate(
-      "span",
-      {
-        opacity: 1,
-        filter: filter ? "blur(0px)" : "none",
-      },
-      {
-        duration: duration ? duration : 1,
-        delay: stagger(0.2),
-      }
-    );
-  }, [scope, animate, duration, filter]);
+    // 添加小延迟确保DOM元素已经渲染
+    const timer = setTimeout(() => {
+      animate(
+        "span",
+        {
+          opacity: 1,
+          filter: filter ? "blur(0px)" : "none",
+        },
+        {
+          duration: duration ? duration : 1,
+          delay: stagger(0.2),
+        }
+      );
+    }, 15);
+
+    return () => clearTimeout(timer);
+  }, [scope, animate, duration, filter, safeWords]); // 添加safeWords依赖，确保当IP地址变化时重新触发动画
 
   const renderWords = () => {
     return (
@@ -36,7 +43,7 @@ export const TextGenerateEffect = ({
         {wordsArray.map((word, idx) => {
           return (
             <motion.span
-              key={word + idx}
+              key={`${safeWords}-${word}-${idx}`} // 使用更唯一的key确保重新渲染
               className="dark:text-white text-black opacity-0"
               style={{
                 filter: filter ? "blur(10px)" : "none",
