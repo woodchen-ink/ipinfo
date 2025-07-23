@@ -54,7 +54,7 @@ jobs:
           echo "Commit: $COMMIT"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-workspace
+        run: pnpm install
 
       - name: Build project
         env:
