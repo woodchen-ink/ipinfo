@@ -8,11 +8,19 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/nextjs-app
+
 jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build_time: ${{ steps.version.outputs.build_time }}
+      commit: ${{ steps.version.outputs.commit }}
 
     steps:
       - name: Checkout code
@@ -54,7 +62,7 @@ jobs:
           echo "Commit: $COMMIT"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build project
         env:
@@ -62,6 +70,20 @@ jobs:
           NEXT_PUBLIC_BUILD_TIME: ${{ steps.version.outputs.build_time }}
           NEXT_PUBLIC_GIT_COMMIT: ${{ steps.version.outputs.commit }}
         run: pnpm build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: |
+            .next/
+            public/
+            package.json
+            pnpm-lock.yaml
+            next.config.*
+          retention-days: 1
+          compression-level: 6
+
   docker:
     name: Build Docker Image
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
@@ -74,29 +96,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Get version info
-        id: version
-        run: |
-          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
-            VERSION=$(git describe --tags --exact-match HEAD)
-          elif git describe --tags >/dev/null 2>&1; then
-            VERSION=$(git describe --tags)
-          else
-            VERSION="dev-${GITHUB_SHA:0:7}"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nextjs-build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Container Registry
         if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -104,8 +117,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/nextjs-app
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -115,10 +127,51 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Create optimized Dockerfile
+        run: |
+          cat > Dockerfile.optimized << 'EOF'
+          FROM node:20-alpine AS runner
+
+          WORKDIR /app
+
+          # 创建非 root 用户
+          RUN addgroup --system --gid 1001 nodejs && \
+              adduser --system --uid 1001 nextjs
+
+          # 安装生产依赖
+          COPY package.json pnpm-lock.yaml ./
+          RUN corepack enable pnpm && \
+              pnpm install --prod --frozen-lockfile && \
+              pnpm store prune
+
+          # 复制构建产物 (从 artifacts 获取，无需重新构建)
+          COPY --chown=nextjs:nodejs .next ./.next
+          COPY --chown=nextjs:nodejs public ./public
+          COPY --chown=nextjs:nodejs next.config.* ./
+
+          # 创建数据目录
+          RUN mkdir -p /app/lib/data && \
+              chown -R nextjs:nodejs /app/lib/data
+
+          USER nextjs
+
+          EXPOSE 3000
+
+          ENV NODE_ENV=production
+          ENV NEXT_TELEMETRY_DISABLED=1
+          ENV PORT=3000
+
+          HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+            CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })" || exit 1
+
+          CMD ["pnpm", "start"]
+          EOF
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile.optimized
           platforms: linux/amd64,linux/arm64
           push: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -126,9 +179,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VERSION=${{ steps.version.outputs.version }}
-            BUILD_TIME=${{ steps.version.outputs.build_time }}
-            GIT_COMMIT=${{ steps.version.outputs.commit }}
+            VERSION=${{ needs.build.outputs.version }}
+            BUILD_TIME=${{ needs.build.outputs.build_time }}
+            GIT_COMMIT=${{ needs.build.outputs.commit }}
 
   release:
     name: Create Release
@@ -156,17 +209,17 @@ jobs:
           # 获取两个tag之间的commit messages
           if [ -n "$PREV_TAG" ]; then
             echo "Found previous tag: $PREV_TAG"
-            COMMIT_MESSAGES=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD | head -20)
+            COMMIT_MESSAGES=$(git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD | head -20)
             if [ -z "$COMMIT_MESSAGES" ]; then
               COMMIT_MESSAGES="- 初始发布"
             fi
           else
-            echo "No previous tag found, getting all commits"
-            COMMIT_MESSAGES=$(git log --pretty=format:"- %s" HEAD | head -20)
+            echo "No previous tag found, getting recent commits"
+            COMMIT_MESSAGES=$(git log --pretty=format:"- %s (%h)" HEAD | head -10)
           fi
 
-          # 处理特殊字符并限制长度
-          COMMIT_MESSAGES=$(echo "$COMMIT_MESSAGES" | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n')
+          # 处理特殊字符
+          COMMIT_MESSAGES=$(echo "$COMMIT_MESSAGES" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
           echo "commit_messages=$COMMIT_MESSAGES" >> $GITHUB_OUTPUT
 
           # 获取当前时间和commit hash
@@ -187,34 +240,56 @@ jobs:
           ### 🐳 Docker 部署
 
           \`\`\`bash
-          # 拉取镜像
-          docker pull ghcr.io/${{ github.repository_owner }}/nextjs-app:${{ steps.tag_info.outputs.tag_name }}
+          # 拉取最新镜像
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
 
           # 运行容器
           docker run -d \\
             --name nextjs-app \\
             -p 3000:3000 \\
             -v \$(pwd)/data:/app/lib/data \\
-            ghcr.io/${{ github.repository_owner }}/nextjs-app:${{ steps.tag_info.outputs.tag_name }}
+            --restart unless-stopped \\
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
           \`\`\`
 
-          ### ✨ 特性
+          ### ✨ 主要特性
 
-          - 🚀 **Next.js 生产构建**: 优化的 SSR/SSG 性能
+          - 🚀 **Next.js 优化构建**: 单次构建，避免重复编译
           - 🐳 **多架构支持**: Linux AMD64/ARM64 容器镜像
           - 💾 **数据持久化**: 支持数据卷挂载，自动初始化
-          - 🛡️ **安全运行**: 非 root 用户，alpine 基础镜像
+          - 🛡️ **安全运行**: 非 root 用户，Alpine 基础镜像
           - 📊 **版本信息**: 内置构建版本和时间信息
+          - 🏥 **健康检查**: 内置容器健康检查
 
           ### 🚀 快速启动
+
+          \`\`\`bash
+          # 使用 Docker Compose (推荐)
+          version: '3.8'
+          services:
+            nextjs-app:
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
+              ports:
+                - "3000:3000"
+              volumes:
+                - ./data:/app/lib/data
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 10s
+          \`\`\`
 
           应用启动后访问: **http://localhost:3000**
 
           ### 📋 系统要求
 
           - **Docker**: 20.10+
-          - **内存**: 最少 512MB RAM
-          - **磁盘**: 最少 100MB 可用空间
+          - **内存**: 最少 512MB RAM (推荐 1GB+)
+          - **磁盘**: 最少 200MB 可用空间
+          - **端口**: 3000 (可自定义)
 
           ### 🆕 版本信息
 
@@ -222,10 +297,20 @@ jobs:
           - **Git 提交**: \`${{ steps.tag_info.outputs.commit_hash }}\`
           - **Node.js**: 20 Alpine
           - **架构**: AMD64, ARM64
+          - **镜像大小**: ~150MB (压缩后)
+
+          ### 🔧 环境变量
+
+          | 变量名 | 默认值 | 说明 |
+          |--------|--------|------|
+          | \`NODE_ENV\` | \`production\` | 运行环境 |
+          | \`PORT\` | \`3000\` | 应用端口 |
+          | \`NEXT_TELEMETRY_DISABLED\` | \`1\` | 禁用遥测 |
 
           ---
 
           **完整更改日志**: [查看所有更改](https://github.com/${{ github.repository }}/compare/v1.0.0...${{ steps.tag_info.outputs.tag_name }})
+          **镜像仓库**: [${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}](https://github.com/${{ github.repository }}/pkgs/container/nextjs-app)
           EOF
 
       - name: Create GitHub Release
@@ -240,7 +325,7 @@ jobs:
   summary:
     name: Build Summary
     if: always()
-    needs: [build, docker]
+    needs: [build, docker, release]
     runs-on: ubuntu-latest
 
     steps:
@@ -252,24 +337,38 @@ jobs:
           if [ "${{ needs.build.result }}" = "success" ]; then
             echo "✅ **构建成功完成！**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📊 构建信息" >> $GITHUB_STEP_SUMMARY
+            echo "- **版本**: \`${{ needs.build.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **构建时间**: ${{ needs.build.outputs.build_time }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **提交**: \`${{ needs.build.outputs.commit }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             
             if [ "${{ needs.docker.result }}" = "success" ]; then
               echo "🐳 **Docker 镜像构建成功**" >> $GITHUB_STEP_SUMMARY
-              echo "- 多架构支持: AMD64, ARM64" >> $GITHUB_STEP_SUMMARY
-              echo "- 数据持久化: 支持 \`/app/lib/data\` 卷挂载" >> $GITHUB_STEP_SUMMARY
-              echo "- 安全运行: 非 root 用户" >> $GITHUB_STEP_SUMMARY
+              echo "- 🚀 单次构建，避免重复编译" >> $GITHUB_STEP_SUMMARY
+              echo "- 🏗️ 多架构支持: AMD64, ARM64" >> $GITHUB_STEP_SUMMARY
+              echo "- 💾 数据持久化: 支持 \`/app/lib/data\` 卷挂载" >> $GITHUB_STEP_SUMMARY
+              echo "- 🛡️ 安全运行: 非 root 用户" >> $GITHUB_STEP_SUMMARY
+              echo "- 🏥 健康检查: 内置容器健康监控" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### 🚀 快速启动" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+              echo "docker run -p 3000:3000 -v \$(pwd)/data:/app/lib/data \\\\" >> $GITHUB_STEP_SUMMARY
+              echo "  --restart unless-stopped \\\\" >> $GITHUB_STEP_SUMMARY
+              echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Docker 构建失败**" >> $GITHUB_STEP_SUMMARY
             fi
             
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 🚀 快速启动" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "docker run -p 3000:3000 -v \$(pwd)/data:/app/lib/data \\\\" >> $GITHUB_STEP_SUMMARY
-            echo "  ghcr.io/${{ github.repository_owner }}/nextjs-app:latest" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            
             if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "🚀 **Release 已自动创建**，包含详细的部署说明" >> $GITHUB_STEP_SUMMARY
+              if [ "${{ needs.release.result }}" = "success" ]; then
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "🚀 **Release 已自动创建**，包含详细的部署说明和更新日志" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "❌ **Release 创建失败**" >> $GITHUB_STEP_SUMMARY
+              fi
             fi
           else
             echo "❌ **构建失败**" >> $GITHUB_STEP_SUMMARY
@@ -280,3 +379,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "*构建完成时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")*" >> $GITHUB_STEP_SUMMARY
+          echo "*工作流触发: ${{ github.event_name }} - ${{ github.ref }}*" >> $GITHUB_STEP_SUMMARY
