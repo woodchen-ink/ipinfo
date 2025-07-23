@@ -100,10 +100,13 @@ function getDirectConnectionIP(request: NextRequest): string | null {
  * @returns 客户端真实IP地址或null
  */
 export function getClientIP(request: NextRequest): string | null {
+  console.log("=== 开始IP检测 ===");
+
   // 扩展的CDN头部列表，按优先级排序
   const headers = [
     // 最可靠的单IP头部
     "cf-connecting-ip", // Cloudflare - 最可靠
+    "eo-connecting-ip", // 腾讯云EdgeOne CDN - 从日志中发现
     "x-real-ip", // Nginx代理常用
     "true-client-ip", // Akamai, CloudFlare Enterprise
     "x-client-ip", // Apache mod_remoteip
@@ -120,19 +123,77 @@ export function getClientIP(request: NextRequest): string | null {
     "x-original-forwarded-for", // 某些代理
   ];
 
+  // 记录所有相关的请求头部
+  console.log("所有请求头部:");
+  const allHeaders: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    allHeaders[key] = value;
+    if (
+      key.toLowerCase().includes("ip") ||
+      key.toLowerCase().includes("forward") ||
+      key.toLowerCase().includes("real") ||
+      key.toLowerCase().includes("client") ||
+      key.toLowerCase().includes("eo-") ||
+      key.toLowerCase().includes("cf-") ||
+      key.toLowerCase().includes("x-")
+    ) {
+      console.log(`  ${key}: ${value}`);
+    }
+  });
+  console.log("完整头部对象:", JSON.stringify(allHeaders, null, 2));
+
   // 尝试每个头部
   for (const headerName of headers) {
-    const headerValue = request.headers.get(headerName);
+    console.log(`\n检测头部: ${headerName}`);
+
+    // 尝试多种大小写组合，因为不同的CDN可能使用不同的大小写
+    const headerVariations = [
+      headerName, // 原始小写
+      headerName.toLowerCase(), // 确保小写
+      headerName
+        .split("-")
+        .map(
+          (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        )
+        .join("-"),
+      headerName.toUpperCase(), // 全大写
+    ];
+
+    let headerValue: string | null = null;
+    let foundVariation: string | null = null;
+
+    // 尝试所有大小写变体
+    for (const variation of headerVariations) {
+      headerValue = request.headers.get(variation);
+      if (headerValue) {
+        foundVariation = variation;
+        console.log(`  找到头部 ${variation}: ${headerValue}`);
+        break;
+      }
+    }
 
     if (!headerValue) {
+      console.log(
+        `  头部 ${headerName} 不存在 (尝试了 ${headerVariations.join(", ")})`
+      );
       continue;
     }
 
     // 处理可能包含多个IP的头部，优先获取公网IP
+    console.log(`  处理头部值: ${headerValue}`);
     const extractedIP = extractPublicIPFromForwardedHeader(headerValue);
+    console.log(`  提取的IP: ${extractedIP}`);
 
     if (extractedIP && detectIPVersion(extractedIP) !== "invalid") {
+      const isPrivate = isPrivateIP(extractedIP);
+      console.log(
+        `  IP验证结果: 有效=${detectIPVersion(extractedIP)}, 私有=${isPrivate}`
+      );
+      console.log(`  ✅ 成功获取IP: ${extractedIP} (来源: ${foundVariation})`);
+      console.log("=== IP检测结束 ===");
       return extractedIP;
+    } else {
+      console.log(`  ❌ IP无效或格式错误: ${extractedIP}`);
     }
   }
 
