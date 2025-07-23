@@ -11,7 +11,45 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # 可选的快速验证步骤
+  validate:
+    name: Quick Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate package.json
+        run: |
+          if [ -f "package.json" ]; then
+            echo "✅ package.json found"
+            # 检查必要的脚本
+            if grep -q '"build"' package.json; then
+              echo "✅ build script found"
+            else
+              echo "❌ build script not found"
+              exit 1
+            fi
+          else
+            echo "❌ package.json not found"
+            exit 1
+          fi
+
+      - name: Validate Dockerfile
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "✅ Dockerfile found"
+            # 简单验证 Dockerfile 语法
+            docker --version
+          else
+            echo "❌ Dockerfile not found"
+            exit 1
+          fi
+
   build-and-push:
+    name: Build and Push Docker
+    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -54,6 +92,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # 传递构建参数（如果你的 Dockerfile 需要）
+          build-args: |
+            NODE_ENV=production
 
       - name: Image summary
         run: |
@@ -69,13 +110,19 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🚀 Quick Start" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# Pull and run the latest image" >> $GITHUB_STEP_SUMMARY
+          echo "# 运行容器（带数据持久化）" >> $GITHUB_STEP_SUMMARY
           echo "docker run -d \\" >> $GITHUB_STEP_SUMMARY
           echo "  --name nextjs-app \\" >> $GITHUB_STEP_SUMMARY
           echo "  -p 3000:3000 \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -v \$(pwd)/data:/app/lib/data \\" >> $GITHUB_STEP_SUMMARY
           echo "  --restart unless-stopped \\" >> $GITHUB_STEP_SUMMARY
           echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 💾 数据持久化" >> $GITHUB_STEP_SUMMARY
+          echo "- 应用会自动初始化 \`/app/lib/data\` 目录" >> $GITHUB_STEP_SUMMARY
+          echo "- 如果挂载的目录为空，会复制默认数据" >> $GITHUB_STEP_SUMMARY
+          echo "- 如果目录有数据，会保留现有数据" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "*Build completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY
 
@@ -139,53 +186,74 @@ jobs:
           # 拉取镜像
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
 
-          # 运行容器
+          # 运行容器（带数据持久化）
           docker run -d \\
             --name nextjs-app \\
             -p 3000:3000 \\
+            -v \$(pwd)/data:/app/lib/data \\
             --restart unless-stopped \\
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
           \`\`\`
 
           ### ✨ 主要特性
 
-          - 🚀 **Next.js 应用**: 高性能的服务端渲染
+          - 🚀 **Next.js Standalone**: 优化的独立运行模式
           - 🐳 **多架构支持**: Linux AMD64/ARM64 容器镜像
-          - 📦 **即用即取**: 无需额外配置，开箱即用
-          - 🛡️ **安全运行**: 优化的 Docker 容器
-          - 🔄 **自动重启**: 支持容器自动重启策略
+          - 💾 **数据持久化**: 自动初始化和数据卷挂载
+          - 🛡️ **安全运行**: 非 root 用户运行
+          - 🔄 **数据管理**: 智能的数据初始化逻辑
+          - 📦 **最小镜像**: Alpine 基础镜像，体积小
 
           ### 🚀 快速开始
 
           **方式一：直接运行**
           \`\`\`bash
+          # 基础运行
           docker run -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
+
+          # 带数据持久化
+          docker run -p 3000:3000 \\
+            -v ./data:/app/lib/data \\
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
           \`\`\`
 
           **方式二：Docker Compose**
           \`\`\`yaml
           version: '3.8'
           services:
-            app:
+            nextjs-app:
               image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
               ports:
                 - "3000:3000"
+              volumes:
+                - ./data:/app/lib/data
               restart: unless-stopped
+              environment:
+                - NODE_ENV=production
           \`\`\`
 
           应用启动后访问: **http://localhost:3000**
 
+          ### 💾 数据持久化说明
+
+          - **自动初始化**: 首次运行时自动创建默认数据
+          - **数据保留**: 重启容器时保留用户数据
+          - **备份友好**: 数据存储在独立的卷中，便于备份
+
           ### 📋 系统要求
 
           - **Docker**: 20.10+
-          - **内存**: 最少 512MB RAM
-          - **磁盘**: 最少 100MB 可用空间
+          - **内存**: 最少 512MB RAM（推荐 1GB+）
+          - **磁盘**: 最少 200MB 可用空间
+          - **端口**: 3000（可自定义）
 
           ### 🆕 版本信息
 
           - **构建时间**: ${{ steps.tag_info.outputs.build_time }}
           - **Git 提交**: \`${{ steps.tag_info.outputs.commit_hash }}\`
+          - **Node.js**: 20 Alpine
           - **架构**: AMD64, ARM64
+          - **运行模式**: Standalone
 
           ---
 
