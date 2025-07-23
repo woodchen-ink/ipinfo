@@ -1,0 +1,284 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main, master, develop]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Get version info
+        id: version
+        run: |
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD)
+          elif git describe --tags >/dev/null 2>&1; then
+            VERSION=$(git describe --tags)
+          else
+            VERSION="dev-${GITHUB_SHA:0:7}"
+          fi
+
+          BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          COMMIT=${GITHUB_SHA:0:7}
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build_time=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+
+          echo "Version: $VERSION"
+          echo "Build time: $BUILD_TIME"
+          echo "Commit: $COMMIT"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        env:
+          NEXT_PUBLIC_VERSION: ${{ steps.version.outputs.version }}
+          NEXT_PUBLIC_BUILD_TIME: ${{ steps.version.outputs.build_time }}
+          NEXT_PUBLIC_GIT_COMMIT: ${{ steps.version.outputs.commit }}
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm run test --if-present
+
+  docker:
+    name: Build Docker Image
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD)
+          elif git describe --tags >/dev/null 2>&1; then
+            VERSION=$(git describe --tags)
+          else
+            VERSION="dev-${GITHUB_SHA:0:7}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/nextjs-app
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            BUILD_TIME=${{ steps.version.outputs.build_time }}
+            GIT_COMMIT=${{ steps.version.outputs.commit }}
+
+  release:
+    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract tag name and get commit info
+        id: tag_info
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+          # 获取上一个tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          # 获取两个tag之间的commit messages
+          if [ -n "$PREV_TAG" ]; then
+            echo "Found previous tag: $PREV_TAG"
+            COMMIT_MESSAGES=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD | head -20)
+            if [ -z "$COMMIT_MESSAGES" ]; then
+              COMMIT_MESSAGES="- 初始发布"
+            fi
+          else
+            echo "No previous tag found, getting all commits"
+            COMMIT_MESSAGES=$(git log --pretty=format:"- %s" HEAD | head -20)
+          fi
+
+          # 处理特殊字符并限制长度
+          COMMIT_MESSAGES=$(echo "$COMMIT_MESSAGES" | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n')
+          echo "commit_messages=$COMMIT_MESSAGES" >> $GITHUB_OUTPUT
+
+          # 获取当前时间和commit hash
+          BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
+          COMMIT_HASH=${GITHUB_SHA:0:7}
+
+          echo "build_time=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "commit_hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        run: |
+          cat > RELEASE_NOTES.md << EOF
+          ## 🚀 Release ${{ steps.tag_info.outputs.tag_name }}
+
+          ### 📝 更新内容
+          $(echo "${{ steps.tag_info.outputs.commit_messages }}" | sed 's/\\n/\n/g')
+
+          ### 🐳 Docker 部署
+
+          \`\`\`bash
+          # 拉取镜像
+          docker pull ghcr.io/${{ github.repository_owner }}/nextjs-app:${{ steps.tag_info.outputs.tag_name }}
+
+          # 运行容器
+          docker run -d \\
+            --name nextjs-app \\
+            -p 3000:3000 \\
+            -v \$(pwd)/data:/app/lib/data \\
+            ghcr.io/${{ github.repository_owner }}/nextjs-app:${{ steps.tag_info.outputs.tag_name }}
+          \`\`\`
+
+          ### ✨ 特性
+
+          - 🚀 **Next.js 生产构建**: 优化的 SSR/SSG 性能
+          - 🐳 **多架构支持**: Linux AMD64/ARM64 容器镜像
+          - 💾 **数据持久化**: 支持数据卷挂载，自动初始化
+          - 🛡️ **安全运行**: 非 root 用户，alpine 基础镜像
+          - 📊 **版本信息**: 内置构建版本和时间信息
+
+          ### 🚀 快速启动
+
+          应用启动后访问: **http://localhost:3000**
+
+          ### 📋 系统要求
+
+          - **Docker**: 20.10+
+          - **内存**: 最少 512MB RAM
+          - **磁盘**: 最少 100MB 可用空间
+
+          ### 🆕 版本信息
+
+          - **构建时间**: ${{ steps.tag_info.outputs.build_time }}
+          - **Git 提交**: \`${{ steps.tag_info.outputs.commit_hash }}\`
+          - **Node.js**: 20 Alpine
+          - **架构**: AMD64, ARM64
+
+          ---
+
+          **完整更改日志**: [查看所有更改](https://github.com/${{ github.repository }}/compare/v1.0.0...${{ steps.tag_info.outputs.tag_name }})
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag_info.outputs.tag_name }}
+          name: Release ${{ steps.tag_info.outputs.tag_name }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+
+  summary:
+    name: Build Summary
+    if: always()
+    needs: [build, docker]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Report build status
+        run: |
+          echo "## 🎯 Next.js 构建总结" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.build.result }}" = "success" ]; then
+            echo "✅ **构建成功完成！**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ needs.docker.result }}" = "success" ]; then
+              echo "🐳 **Docker 镜像构建成功**" >> $GITHUB_STEP_SUMMARY
+              echo "- 多架构支持: AMD64, ARM64" >> $GITHUB_STEP_SUMMARY
+              echo "- 数据持久化: 支持 \`/app/lib/data\` 卷挂载" >> $GITHUB_STEP_SUMMARY
+              echo "- 安全运行: 非 root 用户" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚀 快速启动" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -p 3000:3000 -v \$(pwd)/data:/app/lib/data \\\\" >> $GITHUB_STEP_SUMMARY
+            echo "  ghcr.io/${{ github.repository_owner }}/nextjs-app:latest" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            
+            if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "🚀 **Release 已自动创建**，包含详细的部署说明" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ **构建失败**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "请检查上面的构建日志获取详细错误信息。" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*构建完成时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")*" >> $GITHUB_STEP_SUMMARY
