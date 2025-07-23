@@ -291,6 +291,8 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
         <ReactCountryFlag
           countryCode={countryCode.toUpperCase()}
           svg
+          cdnUrl="https://i.czl.net/cdnjs/ajax/libs/flag-icon-css/7.2.3/flags/4x3/"
+          cdnSuffix="svg"
           style={style}
           className={className}
           title={currentData.country}

@@ -100,7 +100,15 @@ export default function IPQueryForm() {
     style?: React.CSSProperties;
   }) => {
     try {
-      return <ReactCountryFlag countryCode={countryCode} svg style={style} />;
+      return (
+        <ReactCountryFlag
+          countryCode={countryCode}
+          svg
+          cdnUrl="https://i.czl.net/cdnjs/ajax/libs/flag-icon-css/7.2.3/flags/4x3/"
+          cdnSuffix="svg"
+          style={style}
+        />
+      );
     } catch {
       return (
         <div

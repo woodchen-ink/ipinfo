@@ -588,6 +588,8 @@ const TIER2_ASNS = useMemo(() => [2497, 6939, 9370, 17676, 25820, 59105, 137409,
                 <ReactCountryFlag 
                   countryCode={selectedNode.countryCode} 
                   svg 
+                  cdnUrl="https://i.czl.net/cdnjs/ajax/libs/flag-icon-css/7.2.3/flags/4x3/"
+                  cdnSuffix="svg"
                   style={{ width: '1em', height: '1em', marginLeft: '0.25rem' }} 
                 />
               ) : '🌐'} {selectedNode.countryCode}

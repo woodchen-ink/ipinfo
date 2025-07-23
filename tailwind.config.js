@@ -38,8 +38,8 @@ module.exports = {
                 'theme-xl': 'var(--shadow-xl)',
             },
             fontFamily: {
-                sans: ['var(--font-inter)'],
-                mono: ['var(--font-jetbrains-mono)'],
+                sans: ['var(--font-sans)'],
+                mono: ['var(--font-mono)'],
             },
             animation: {
                 'pulse-border': 'pulse-border 2s ease-in-out infinite',

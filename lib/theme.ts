@@ -43,8 +43,13 @@ export const useTheme = (): ThemeContextValue => {
   const applyTheme = (newResolvedTheme: "light" | "dark") => {
     if (typeof window === "undefined") return;
     const root = document.documentElement;
+    // 只移除 light 和 dark 类，保留其他类如 sunai
     root.classList.remove("light", "dark");
     root.classList.add(newResolvedTheme);
+    // 确保 sunai 类始终存在
+    if (!root.classList.contains("sunai")) {
+      root.classList.add("sunai");
+    }
     setResolvedTheme(newResolvedTheme);
   };
 
@@ -80,6 +85,14 @@ export const useTheme = (): ThemeContextValue => {
 
     const initialResolvedTheme = resolveTheme(storedTheme);
     applyTheme(initialResolvedTheme);
+    
+    // 确保在初始化时添加 sunai 类
+    if (typeof window !== "undefined") {
+      const root = document.documentElement;
+      if (!root.classList.contains("sunai")) {
+        root.classList.add("sunai");
+      }
+    }
   }, []);
 
   // 监听系统主题变化

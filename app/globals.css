@@ -3,11 +3,13 @@
 /* 启用暗色模式类名策略 */
 @variant dark (.dark &);
 
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Noto Sans SC', system-ui, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Inconsolata', 'Roboto Mono', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+}
+
 /* CSS变量定义 */
 :root {
-  /* 字体系列 */
-  --font-inter: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
-  --font-jetbrains-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", monospace;
 
   /* 基础颜色系统 */
   --color-primary: 59 130 246; /* blue-500 */
@@ -89,6 +91,134 @@
     0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
+/* sunai 主题 - 浅色模式 */
+.sunai {
+  /* 基础颜色系统 - sunai主题 */
+  --color-primary: 192 130 89; /* #C08259 强调色 */
+  --color-secondary: 184 94 72; /* #b85e48 第二强调色 */
+  --color-success: 81 135 81; /* #518751 成功色 */
+  --color-warning: 236 236 112; /* #ecec70 突出显示 */
+  --color-error: 184 94 72; /* #b85e48 危险色 */
+  --color-love: 250 108 141; /* #fa6c8d 爱心色 */
+
+  /* 浅色主题语义化颜色 */
+  --color-background: 248 247 246; /* #F8F7F6 主要背景色 */
+  --color-background-secondary: 244 232 224; /* #F4E8E0 已选择 */
+  --color-surface: 248 247 246; /* #F8F7F6 */
+  --color-surface-hover: 238 237 236; /* #EEEDEC 悬停 */
+  --color-border: 238 237 236; /* #EEEDEC */
+  --color-border-light: 244 232 224; /* #F4E8E0 */
+  --color-text-primary: 0 0 0; /* #000000 主要文本 */
+  --color-text-secondary: 0 0 0; /* #000000 */
+  --color-text-muted: 192 130 89; /* #C08259 */
+  --color-text-inverse: 248 247 246; /* #F8F7F6 */
+
+  /* 卡片和表面 */
+  --color-card-background: 248 247 246; /* #F8F7F6 */
+  --color-card-border: 238 237 236; /* #EEEDEC */
+  --color-glass-background: 248 247 246 / 0.9;
+  --color-glass-border: 238 237 236 / 0.2;
+
+  /* 交互状态 */
+  --color-hover-background: 238 237 236; /* #EEEDEC 悬停 */
+  --color-active-background: 244 232 224; /* #F4E8E0 已选择 */
+  --color-focus-ring: 192 130 89; /* #C08259 */
+
+  /* 导航栏使用反差色 */
+  --color-nav-background: 0 0 0; /* #000000 */
+  --color-nav-text: 248 247 246; /* #F8F7F6 */
+
+  /* 按钮配色 */
+  --color-button-primary-bg: 0 0 0; /* #000000 主要按钮背景 */
+  --color-button-primary-text: 248 247 246; /* #F8F7F6 主要按钮文字 */
+  --color-button-primary-accent: 192 130 89; /* #C08259 主要按钮强调 */
+  --color-button-secondary-bg: 238 237 236; /* #EEEDEC 普通按钮 */
+  --color-button-secondary-text: 0 0 0; /* #000000 普通按钮文字 */
+  --color-button-danger-bg: 184 94 72; /* #b85e48 删除按钮 */
+  --color-button-danger-text: 248 247 246; /* #F8F7F6 删除按钮文字 */
+
+  /* 渐变背景 */
+  --gradient-background: linear-gradient(
+    135deg,
+    rgb(248 247 246),
+    rgb(244 232 224),
+    rgb(238 237 236)
+  );
+  --gradient-card: linear-gradient(
+    135deg,
+    rgb(248 247 246 / 0.9),
+    rgb(244 232 224 / 0.9)
+  );
+
+  /* 阴影系统 */
+  --shadow-sm: 0 1px 2px 0 rgb(192 130 89 / 0.15);
+  --shadow-md: 0 4px 6px -1px rgb(192 130 89 / 0.2), 0 2px 4px -2px rgb(192 130 89 / 0.2);
+  --shadow-lg: 0 10px 15px -3px rgb(192 130 89 / 0.2),
+    0 4px 6px -4px rgb(192 130 89 / 0.2);
+  --shadow-xl: 0 20px 25px -5px rgb(192 130 89 / 0.3),
+    0 8px 10px -6px rgb(192 130 89 / 0.3);
+}
+
+/* sunai 主题 - 暗色模式 */
+.sunai.dark {
+  /* 暗色主题背景色系 - 基于温暖的深色调 */
+  --color-background: 32 28 26; /* 深棕色背景 */
+  --color-background-secondary: 41 35 32; /* 稍亮的深棕色 */
+  --color-surface: 41 35 32;
+  --color-surface-hover: 51 44 40; /* 悬停更亮 */
+  --color-border: 61 54 49; /* 边框色 */
+  --color-border-light: 71 64 58;
+  --color-text-primary: 248 247 246; /* #F8F7F6 主要文本 */
+  --color-text-secondary: 220 215 210; /* 略暗的文字 */
+  --color-text-muted: 192 130 89; /* #C08259 弱化文字 */
+  --color-text-inverse: 32 28 26; /* 反色文字 */
+
+  /* 卡片和表面 */
+  --color-card-background: 41 35 32;
+  --color-card-border: 61 54 49;
+  --color-glass-background: 41 35 32 / 0.9;
+  --color-glass-border: 71 64 58 / 0.3;
+
+  /* 交互状态 */
+  --color-hover-background: 51 44 40;
+  --color-active-background: 61 54 49;
+  --color-focus-ring: 192 130 89; /* #C08259 */
+
+  /* 导航栏保持反差设计 */
+  --color-nav-background: 0 0 0; /* #000000 */
+  --color-nav-text: 248 247 246; /* #F8F7F6 */
+
+  /* 按钮配色 - 暗色模式调整 */
+  --color-button-primary-bg: 192 130 89; /* #C08259 暗色模式主按钮用强调色 */
+  --color-button-primary-text: 32 28 26; /* 深色文字 */
+  --color-button-primary-accent: 248 247 246; /* 浅色强调 */
+  --color-button-secondary-bg: 51 44 40; /* 普通按钮 */
+  --color-button-secondary-text: 248 247 246; /* 浅色文字 */
+  --color-button-danger-bg: 184 94 72; /* #b85e48 删除按钮 */
+  --color-button-danger-text: 248 247 246; /* #F8F7F6 */
+
+  /* 渐变背景 - 暗色版本 */
+  --gradient-background: linear-gradient(
+    135deg,
+    rgb(32 28 26),
+    rgb(41 35 32),
+    rgb(51 44 40)
+  );
+  --gradient-card: linear-gradient(
+    135deg,
+    rgb(41 35 32 / 0.9),
+    rgb(51 44 40 / 0.9)
+  );
+
+  /* 暗色模式阴影 */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5),
+    0 4px 6px -4px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6),
+    0 8px 10px -6px rgb(0 0 0 / 0.6);
+}
+
 /* 暗色主题 */
 .dark {
   /* 暗色主题语义化颜色 */
@@ -149,7 +279,7 @@ html {
 }
 
 body {
-  font-family: var(--font-inter);
+  font-family: var(--font-sans);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -157,16 +287,16 @@ body {
 
 /* 字体类工具 */
 .font-mono {
-  font-family: var(--font-jetbrains-mono);
+  font-family: var(--font-mono);
 }
 
 .font-sans {
-  font-family: var(--font-inter);
+  font-family: var(--font-sans);
 }
 
 /* IP显示专用样式 */
 .ip-display {
-  font-family: var(--font-jetbrains-mono);
+  font-family: var(--font-mono);
   font-size: 2.5rem;
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -174,14 +304,14 @@ body {
 }
 
 .location-primary {
-  font-family: var(--font-inter);
+  font-family: var(--font-sans);
   font-size: 1.25rem;
   font-weight: 500;
   line-height: 1.4;
 }
 
 .metadata {
-  font-family: var(--font-inter);
+  font-family: var(--font-sans);
   font-size: 0.875rem;
   font-weight: 400;
   color: rgb(107 114 128); /* gray-500 */

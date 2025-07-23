@@ -18,19 +18,19 @@ export interface TileProvider {
 export const MAP_TILE_PROVIDERS: Record<MapTheme, TileProvider> = {
   light: {
     name: "CartoDB Positron",
-    url: "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+    url: "https://i.czl.net/mirror/https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
     maxZoom: 18,
   },
   dark: {
     name: "CartoDB Dark Matter",
-    url: "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+    url: "https://i.czl.net/mirror/https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
     maxZoom: 18,
   },
   auto: {
     name: "CartoDB Positron",
-    url: "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+    url: "https://i.czl.net/mirror/https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
     maxZoom: 18,
   },
