@@ -2,12 +2,12 @@ import { Metadata } from "next";
 import { isValidIP, detectIPVersion } from "@/lib/ip-detection";
 
 interface Props {
-  params: { ip: string };
+  params: Promise<{ ip: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // 解码 IP 地址
-  const rawIP = Array.isArray(params.ip) ? params.ip.join("/") : params.ip;
+  const { ip: rawIP } = await params;
   const ip = decodeURIComponent(rawIP);
   
   // 验证 IP 地址

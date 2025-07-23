@@ -2,8 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [master, main, develop]
-    tags: ["v*"]
+    branches: [master, main]
   workflow_dispatch:
 
 env:
@@ -11,45 +10,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # 可选的快速验证步骤
-  validate:
-    name: Quick Validation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Validate package.json
-        run: |
-          if [ -f "package.json" ]; then
-            echo "✅ package.json found"
-            # 检查必要的脚本
-            if grep -q '"build"' package.json; then
-              echo "✅ build script found"
-            else
-              echo "❌ build script not found"
-              exit 1
-            fi
-          else
-            echo "❌ package.json not found"
-            exit 1
-          fi
-
-      - name: Validate Dockerfile
-        run: |
-          if [ -f "Dockerfile" ]; then
-            echo "✅ Dockerfile found"
-            # 简单验证 Dockerfile 语法
-            docker --version
-          else
-            echo "❌ Dockerfile not found"
-            exit 1
-          fi
-
   build-and-push:
     name: Build and Push Docker
-    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,11 +37,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
@@ -90,182 +47,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # 传递构建参数（如果你的 Dockerfile 需要）
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
             NODE_ENV=production
-
-      - name: Image summary
-        run: |
-          echo "## 🐳 Docker Image Built Successfully" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Image Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Repository**: ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tags**: " >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" | while read tag; do
-            echo "  - \`$tag\`" >> $GITHUB_STEP_SUMMARY
-          done
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚀 Quick Start" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# 运行容器（带数据持久化）" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -d \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --name nextjs-app \\" >> $GITHUB_STEP_SUMMARY
-          echo "  -p 3000:3000 \\" >> $GITHUB_STEP_SUMMARY
-          echo "  -v \$(pwd)/data:/app/lib/data \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --restart unless-stopped \\" >> $GITHUB_STEP_SUMMARY
-          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 💾 数据持久化" >> $GITHUB_STEP_SUMMARY
-          echo "- 应用会自动初始化 \`/app/lib/data\` 目录" >> $GITHUB_STEP_SUMMARY
-          echo "- 如果挂载的目录为空，会复制默认数据" >> $GITHUB_STEP_SUMMARY
-          echo "- 如果目录有数据，会保留现有数据" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*Build completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY
-
-  release:
-    name: Create Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Extract tag info
-        id: tag_info
-        run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-
-          # 获取上一个tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-
-          # 获取commit信息
-          if [ -n "$PREV_TAG" ]; then
-            echo "Found previous tag: $PREV_TAG"
-            COMMIT_MESSAGES=$(git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD | head -20)
-            if [ -z "$COMMIT_MESSAGES" ]; then
-              COMMIT_MESSAGES="- 初始发布"
-            fi
-          else
-            echo "No previous tag found, getting recent commits"
-            COMMIT_MESSAGES=$(git log --pretty=format:"- %s (%h)" HEAD | head -10)
-          fi
-
-          # 处理特殊字符
-          COMMIT_MESSAGES=$(echo "$COMMIT_MESSAGES" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-          echo "commit_messages=$COMMIT_MESSAGES" >> $GITHUB_OUTPUT
-
-          # 获取时间和commit hash
-          BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
-          COMMIT_HASH=${GITHUB_SHA:0:7}
-
-          echo "build_time=$BUILD_TIME" >> $GITHUB_OUTPUT
-          echo "commit_hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
-
-      - name: Generate release notes
-        run: |
-          cat > RELEASE_NOTES.md << EOF
-          ## 🚀 Release ${{ steps.tag_info.outputs.tag_name }}
-
-          ### 📝 更新内容
-          $(echo "${{ steps.tag_info.outputs.commit_messages }}" | sed 's/\\n/\n/g')
-
-          ### 🐳 Docker 部署
-
-          \`\`\`bash
-          # 拉取镜像
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
-
-          # 运行容器（带数据持久化）
-          docker run -d \\
-            --name nextjs-app \\
-            -p 3000:3000 \\
-            -v \$(pwd)/data:/app/lib/data \\
-            --restart unless-stopped \\
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
-          \`\`\`
-
-          ### ✨ 主要特性
-
-          - 🚀 **Next.js Standalone**: 优化的独立运行模式
-          - 🐳 **多架构支持**: Linux AMD64/ARM64 容器镜像
-          - 💾 **数据持久化**: 自动初始化和数据卷挂载
-          - 🛡️ **安全运行**: 非 root 用户运行
-          - 🔄 **数据管理**: 智能的数据初始化逻辑
-          - 📦 **最小镜像**: Alpine 基础镜像，体积小
-
-          ### 🚀 快速开始
-
-          **方式一：直接运行**
-          \`\`\`bash
-          # 基础运行
-          docker run -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
-
-          # 带数据持久化
-          docker run -p 3000:3000 \\
-            -v ./data:/app/lib/data \\
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
-          \`\`\`
-
-          **方式二：Docker Compose**
-          \`\`\`yaml
-          version: '3.8'
-          services:
-            nextjs-app:
-              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag_info.outputs.tag_name }}
-              ports:
-                - "3000:3000"
-              volumes:
-                - ./data:/app/lib/data
-              restart: unless-stopped
-              environment:
-                - NODE_ENV=production
-          \`\`\`
-
-          应用启动后访问: **http://localhost:3000**
-
-          ### 💾 数据持久化说明
-
-          - **自动初始化**: 首次运行时自动创建默认数据
-          - **数据保留**: 重启容器时保留用户数据
-          - **备份友好**: 数据存储在独立的卷中，便于备份
-
-          ### 📋 系统要求
-
-          - **Docker**: 20.10+
-          - **内存**: 最少 512MB RAM（推荐 1GB+）
-          - **磁盘**: 最少 200MB 可用空间
-          - **端口**: 3000（可自定义）
-
-          ### 🆕 版本信息
-
-          - **构建时间**: ${{ steps.tag_info.outputs.build_time }}
-          - **Git 提交**: \`${{ steps.tag_info.outputs.commit_hash }}\`
-          - **Node.js**: 20 Alpine
-          - **架构**: AMD64, ARM64
-          - **运行模式**: Standalone
-
-          ---
-
-          **完整更改日志**: [查看所有更改](https://github.com/${{ github.repository }}/compare/v1.0.0...${{ steps.tag_info.outputs.tag_name }})
-          **镜像仓库**: [${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}](https://github.com/${{ github.repository }}/pkgs/container/${{ github.event.repository.name }})
-          EOF
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.tag_info.outputs.tag_name }}
-          name: Release ${{ steps.tag_info.outputs.tag_name }}
-          body_path: RELEASE_NOTES.md
-          draft: false
-          prerelease: false
