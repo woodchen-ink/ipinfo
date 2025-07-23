@@ -20,8 +20,42 @@ export default function Home() {
     executeQuery();
   }, [executeQuery]);
 
+  // 结构化数据
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "IP地理位置查询工具",
+    "description": "专业的IP地理位置查询工具，支持IPv4/IPv6地址查询，提供详细的地理位置、运营商、ASN、网络拓扑等信息。",
+    "url": "https://ipinfo.czl.net",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CNY"
+    },
+    "creator": {
+      "@type": "Person",
+      "name": "CZL"
+    },
+    "featureList": [
+      "IPv4地址查询",
+      "IPv6地址查询", 
+      "地理位置定位",
+      "运营商信息查询",
+      "ASN信息查询",
+      "网络拓扑分析"
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
+      {/* 结构化数据 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      
       {/* 背景装饰 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -right-32 w-64 h-64 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-3xl transition-colors duration-500"></div>

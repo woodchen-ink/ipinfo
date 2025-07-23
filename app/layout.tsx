@@ -19,25 +19,58 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IP-Search",
-  description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
-  keywords: "IP查询,IPv4,IPv6,地理位置,运营商,ASN,网络信息,IP定位",
-  authors: [{ name: "dnslin" }],
-  creator: "dnslin",
-  publisher: "dnslin",
-  robots: "index, follow",
+  title: {
+    default: "IP地理位置查询工具 - 精确查询IPv4/IPv6地址信息",
+    template: "%s | IP查询工具"
+  },
+  description: "专业的IP地理位置查询工具，支持IPv4/IPv6地址查询，提供详细的地理位置、运营商、ASN、网络拓扑等信息。快速、准确、免费的IP定位服务。",
+  keywords: ["IP查询", "IPv4查询", "IPv6查询", "IP地理位置", "IP定位", "运营商查询", "ASN查询", "网络信息", "IP地址查询", "免费IP查询"],
+  authors: [{ name: "CZL", url: "https://github.com/dnslin" }],
+  creator: "CZL",
+  publisher: "IP查询工具",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: "https://ipinfo.czl.net",
+  },
   openGraph: {
     type: "website",
     locale: "zh_CN",
-    title: "IP地址查询 - 精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
-    description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
-    siteName: "IP-Search",
+    url: "https://ipinfo.czl.net",
+    title: "IP地理位置查询工具 - 精确查询IPv4/IPv6地址信息",
+    description: "专业的IP地理位置查询工具，支持IPv4/IPv6地址查询，提供详细的地理位置、运营商、ASN、网络拓扑等信息。快速、准确、免费的IP定位服务。",
+    siteName: "IP查询工具",
+    images: [
+      {
+        url: "/favicon.ico",
+        width: 32,
+        height: 32,
+        alt: "IP地理位置查询工具"
+      }
+    ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "IP地址查询 - 精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
-    description: "精确查询IPv4/IPv6地址的地理位置、运营商信息和网络详情",
+    title: "IP地理位置查询工具 - 精确查询IPv4/IPv6地址信息",
+    description: "专业的IP地理位置查询工具，支持IPv4/IPv6地址查询，提供详细的地理位置、运营商、ASN、网络拓扑等信息。",
   },
+  verification: {
+    // google: "your-google-verification-code",
+    // yandex: "your-yandex-verification-code", 
+    // yahoo: "your-yahoo-verification-code",
+  },
+  category: "technology",
+  classification: "IP查询工具",
+  referrer: "origin-when-cross-origin",
 };
 
 export const viewport: Viewport = {
@@ -54,9 +87,14 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
