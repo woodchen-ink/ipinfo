@@ -21,12 +21,12 @@ const getSystemTheme = (): "light" | "dark" => {
 
 // 从localStorage获取保存的主题
 const getStoredTheme = (): Theme => {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "dark";
   try {
     const stored = localStorage.getItem("theme") as Theme;
-    return stored || "system";
+    return stored || "dark";
   } catch {
-    return "system";
+    return "dark";
   }
 };
 
@@ -36,11 +36,12 @@ const resolveTheme = (theme: Theme): "light" | "dark" => {
 };
 
 export const useTheme = (): ThemeContextValue => {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
 
   // 应用主题到DOM
   const applyTheme = (newResolvedTheme: "light" | "dark") => {
+    if (typeof window === "undefined") return;
     const root = document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(newResolvedTheme);
@@ -52,10 +53,12 @@ export const useTheme = (): ThemeContextValue => {
     setThemeState(newTheme);
 
     // 保存到localStorage
-    try {
-      localStorage.setItem("theme", newTheme);
-    } catch (error) {
-      console.warn("Failed to save theme to localStorage:", error);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("theme", newTheme);
+      } catch (error) {
+        console.warn("Failed to save theme to localStorage:", error);
+      }
     }
 
     // 应用解析后的主题
@@ -81,7 +84,7 @@ export const useTheme = (): ThemeContextValue => {
 
   // 监听系统主题变化
   useEffect(() => {
-    if (theme !== "system") return;
+    if (theme !== "system" || typeof window === "undefined") return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 

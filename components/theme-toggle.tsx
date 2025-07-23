@@ -17,8 +17,10 @@ export default function ThemeToggle() {
   // 圆形扩散切换主题效果
   const toggleThemeWithAnimation = (event: React.MouseEvent) => {
     // 检查浏览器是否支持 View Transitions API
-    const isAppearanceTransition = typeof document.startViewTransition === 'function'
-        && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isAppearanceTransition = typeof document !== "undefined" && 
+        typeof document.startViewTransition === 'function' &&
+        typeof window !== "undefined" &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (!isAppearanceTransition) {
       // 如果不支持，直接切换主题
