@@ -198,11 +198,18 @@ export function getClientIP(request: NextRequest): string | null {
   }
 
   // 所有头部都失败，尝试回退方案
+  console.log("\n所有头部检测失败，尝试回退方案...");
   const directIP = getDirectConnectionIP(request);
+  console.log(`回退方案获取的IP: ${directIP}`);
+
   if (directIP && detectIPVersion(directIP) !== "invalid") {
+    console.log(`✅ 回退成功获取IP: ${directIP}`);
+    console.log("=== IP检测结束 ===");
     return directIP;
   }
 
+  console.log("❌ 所有方案都失败，无法获取有效IP");
+  console.log("=== IP检测结束 ===");
   return null;
 }
 
