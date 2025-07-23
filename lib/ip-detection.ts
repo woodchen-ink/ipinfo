@@ -78,12 +78,6 @@ function getDirectConnectionIP(request: NextRequest): string | null {
   // 尝试从request对象获取IP（Next.js可能提供）
   // 注意：这个方法在不同的部署环境中可能不同
   try {
-    // @ts-ignore - request.ip可能存在但类型定义中没有
-    if (request.ip) {
-      // @ts-ignore
-      return request.ip;
-    }
-
     // 尝试从URL对象获取
     if (request.nextUrl && request.nextUrl.hostname) {
       const hostname = request.nextUrl.hostname;
