@@ -6,7 +6,6 @@ import { Search, Loader2 } from "lucide-react";
 import { useIPQueryStore } from "@/lib/store";
 import IPQueryForm from "@/components/ip-query-form";
 import IPInfoCard from "@/components/ip-info-card";
-import VersionSwitcher from "@/components/version-switcher";
 import ThemeToggle from "@/components/theme-toggle";
 
 export default function Home() {
@@ -22,7 +21,7 @@ export default function Home() {
   }, [executeQuery]);
 
   return (
-    <div className="min-h-screen bg-gradient-main transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
       {/* 背景装饰 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -right-32 w-64 h-64 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-3xl transition-colors duration-500"></div>
@@ -38,8 +37,11 @@ export default function Home() {
           transition={{ duration: 0.4 }}
           className="flex justify-between items-center px-4 md:px-6 py-3 md:py-4"
         >
-          <div className="flex-1"></div>
-          <VersionSwitcher />
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+              IP查询工具 by CZL
+            </h1>
+          </div>
           <div className="flex-1 flex justify-end">
             <ThemeToggle />
           </div>
@@ -136,7 +138,7 @@ export default function Home() {
           className="text-center py-6 px-6 mt-auto"
         >
           <div className="text-xs text-[rgb(var(--color-text-muted))]">
-            <p>© 2024 专注于提供精确的IP地理位置信息</p>
+            <p>© {new Date().getFullYear()} 专注于提供精确的IP地理位置信息</p>
           </div>
         </motion.footer>
       </div>

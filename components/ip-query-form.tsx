@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import ReactCountryFlag from "react-country-flag";
 import { Globe, Wifi, Sparkles, Target } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useIPQueryStore } from "@/lib/store";
-import { isValidIP, checkPrivateIP } from "@/lib/ip-detection";
+import { isValidIP, checkPrivateIP, detectIPVersion } from "@/lib/ip-detection";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ export default function IPQueryForm() {
   const [inputValue, setInputValue] = useState("");
   const [validationError, setValidationError] = useState("");
   const [hoveredButton, setHoveredButton] = useState<number | null>(null);
+  const router = useRouter();
 
   const { setQuery, executeQuery, isLoading, error, clearError } =
     useIPQueryStore();
@@ -64,8 +66,11 @@ export default function IPQueryForm() {
       return;
     }
 
-    setQuery(trimmedValue);
-    await executeQuery(trimmedValue);
+    // 导航到基于路径的IP查询页面
+    const encodedIP = detectIPVersion(trimmedValue) === "IPv6" 
+      ? encodeURIComponent(trimmedValue) 
+      : trimmedValue;
+    router.push(`/${encodedIP}`);
   };
 
   const handleInputChangeForVanishInput = (
@@ -218,7 +223,7 @@ export default function IPQueryForm() {
             )}
           </AnimatePresence>
           <motion.button
-            onClick={() => handleInputChange("8.8.8.8")}
+            onClick={() => router.push("/8.8.8.8")}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="relative z-10 flex items-center space-x-1.5 md:space-x-2 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm bg-blue-50 dark:bg-blue-900/20 rounded-full transition-all duration-200 border border-blue-200 dark:border-blue-700 min-h-[44px] md:min-h-auto"
@@ -264,7 +269,7 @@ export default function IPQueryForm() {
             )}
           </AnimatePresence>
           <motion.button
-            onClick={() => handleInputChange("2001:4860:4860::8888")}
+            onClick={() => router.push("/2001:4860:4860::8888")}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="relative z-10 flex items-center space-x-1.5 md:space-x-2 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm bg-purple-50 dark:bg-purple-900/20 rounded-full transition-all duration-200 border border-purple-200 dark:border-purple-700 min-h-[44px] md:min-h-auto"

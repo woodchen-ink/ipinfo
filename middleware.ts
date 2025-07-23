@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getClientIP, getUserIPVersion } from "@/lib/ip-detection";
+import { getClientIP, getUserIPVersion, isValidIP } from "@/lib/ip-detection";
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -8,6 +8,27 @@ export function middleware(request: NextRequest) {
 
   // 解析子域名
   const subdomain = hostname.split(".")[0];
+
+  // 检查是否是IP路径查询（如 /58.xx.xx.xx 或 /2001:db8::1）
+  const pathname = url.pathname;
+  if (pathname !== "/" && !pathname.startsWith("/api/") && !pathname.startsWith("/_next/")) {
+    // 移除开头的斜杠，获取可能的IP地址
+    let possibleIP = pathname.slice(1);
+    
+    // 处理URL解码
+    possibleIP = decodeURIComponent(possibleIP);
+    
+    // 处理IPv6地址的特殊情况
+    if (possibleIP.includes("%3A")) {
+      possibleIP = possibleIP.replace(/%3A/g, ":");
+    }
+    
+    // 验证是否是有效的IP地址
+    if (isValidIP(possibleIP)) {
+      // 这是一个有效的IP地址路径，添加到URL参数中
+      url.searchParams.set("queryIP", possibleIP);
+    }
+  }
 
   // 获取客户端IP并添加到请求头
   const clientIP = getClientIP(request);
