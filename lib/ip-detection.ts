@@ -38,32 +38,130 @@ export function detectIPVersion(ip: string): "IPv4" | "IPv6" | "invalid" {
   return "invalid";
 }
 
-// 获取客户端真实IP地址
+/**
+ * 从包含多个IP的头部中提取第一个公网IP
+ * @param headerValue 头部值，可能包含多个用逗号分隔的IP
+ * @returns 第一个有效的公网IP，如果没有则返回null
+ */
+function extractPublicIPFromForwardedHeader(
+  headerValue: string
+): string | null {
+  const ips = headerValue.split(",").map((ip) => ip.trim());
+
+  // 首先尝试找到第一个有效的公网IP
+  for (const ip of ips) {
+    const version = detectIPVersion(ip);
+    const isPrivate = isPrivateIP(ip);
+
+    // 优先返回有效的公网IP
+    if (version !== "invalid" && !isPrivate) {
+      return ip;
+    }
+  }
+
+  // 如果没有找到公网IP，返回第一个有效IP（即使是私有的）
+  for (const ip of ips) {
+    if (detectIPVersion(ip) !== "invalid") {
+      return ip;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 获取直接连接的IP地址（回退方案）
+ * @param request NextRequest对象
+ * @returns 直接连接的IP地址或null
+ */
+function getDirectConnectionIP(request: NextRequest): string | null {
+  // 尝试从request对象获取IP（Next.js可能提供）
+  // 注意：这个方法在不同的部署环境中可能不同
+  try {
+    // 尝试从URL对象获取
+    if (request.nextUrl && request.nextUrl.hostname) {
+      const hostname = request.nextUrl.hostname;
+      // 如果hostname是IP地址，返回它
+      if (detectIPVersion(hostname) !== "invalid") {
+        return hostname;
+      }
+    }
+  } catch (error) {
+    console.warn("获取直接连接IP失败:", error);
+  }
+
+  return null;
+}
+
+/**
+ * 获取客户端真实IP地址（增强版）
+ * 支持CDN环境下的真实IP检测，包括智能的多IP处理和回退机制
+ * @param request NextRequest对象
+ * @returns 客户端真实IP地址或null
+ */
 export function getClientIP(request: NextRequest): string | null {
-  // 按优先级尝试不同的header
+  // 扩展的CDN头部列表，按优先级排序
   const headers = [
-    "x-real-ip",
-    "x-forwarded-for",
-    "x-client-ip",
-    "cf-connecting-ip", // Cloudflare
+    // 最可靠的单IP头部
+    "cf-connecting-ip", // Cloudflare - 最可靠
+    "eo-connecting-ip", // 腾讯云EdgeOne CDN - 从日志中发现
+    "x-real-ip", // Nginx代理常用
+    "true-client-ip", // Akamai, CloudFlare Enterprise
+    "x-client-ip", // Apache mod_remoteip
+
+    // Vercel和其他平台专用
     "x-vercel-forwarded-for", // Vercel
+    "x-forwarded-for", // 标准头部，但可能包含多个IP
+
+    // 其他常见头部
     "x-forwarded",
     "forwarded-for",
     "forwarded",
+    "x-cluster-client-ip", // 集群环境
+    "x-original-forwarded-for", // 某些代理
   ];
 
-  for (const header of headers) {
-    const value = request.headers.get(header);
-    if (value) {
-      // x-forwarded-for可能包含多个IP，取第一个
-      const ips = value.split(",").map((ip) => ip.trim());
-      const firstIP = ips[0];
+  // 尝试每个头部
+  for (const headerName of headers) {
+    // 尝试多种大小写组合，因为不同的CDN可能使用不同的大小写
+    const headerVariations = [
+      headerName, // 原始小写
+      headerName.toLowerCase(), // 确保小写
+      headerName
+        .split("-")
+        .map(
+          (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        )
+        .join("-"), // 首字母大写：Eo-Connecting-Ip
+      headerName.toUpperCase(), // 全大写
+    ];
 
-      // 验证IP格式
-      if (detectIPVersion(firstIP) !== "invalid") {
-        return firstIP;
+    let headerValue: string | null = null;
+
+    // 尝试所有大小写变体
+    for (const variation of headerVariations) {
+      headerValue = request.headers.get(variation);
+      if (headerValue) {
+        break;
       }
     }
+
+    if (!headerValue) {
+      continue;
+    }
+
+    // 处理可能包含多个IP的头部，优先获取公网IP
+    const extractedIP = extractPublicIPFromForwardedHeader(headerValue);
+
+    if (extractedIP && detectIPVersion(extractedIP) !== "invalid") {
+      return extractedIP;
+    }
+  }
+
+  // 所有头部都失败，尝试回退方案
+  const directIP = getDirectConnectionIP(request);
+  if (directIP && detectIPVersion(directIP) !== "invalid") {
+    return directIP;
   }
 
   return null;

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, AlertTriangle, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useIPQueryStore } from "@/lib/store";
 import IPQueryForm from "@/components/ip-query-form";
 import IPInfoCard from "@/components/ip-info-card";
@@ -13,7 +13,6 @@ export default function Home() {
   const { 
     ipData, 
     isLoading, 
-    error, 
     executeQuery
   } = useIPQueryStore();
 
