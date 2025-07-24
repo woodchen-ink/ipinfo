@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { IPInfo } from "@/lib/store";
 import { isValidIP, detectIPVersion } from "@/lib/ip-detection";
@@ -8,7 +8,6 @@ import IPInfoCard from "@/components/ip-info-card";
 import IPLocationMap from "@/components/ip-location-map";
 import SimpleIPQueryForm from "@/components/simple-ip-query-form";
 import ThemeToggle from "@/components/theme-toggle";
-import { useTheme } from "@/lib/theme";
 
 export default function IPPage() {
   const params = useParams();
@@ -17,11 +16,9 @@ export default function IPPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // 初始化主题
-  const { resolvedTheme } = useTheme();
 
   // 从URL参数中获取IP地址，支持IPv6的特殊编码
-  const getIPFromParams = (): string | null => {
+  const getIPFromParams = useCallback((): string | null => {
     if (!params.ip) return null;
     
     let rawIP = Array.isArray(params.ip) ? params.ip.join("/") : params.ip;
@@ -37,7 +34,7 @@ export default function IPPage() {
     }
     
     return rawIP;
-  };
+  }, [params.ip]);
 
   const queryIP = async (ip: string) => {
     if (!isValidIP(ip)) {
@@ -102,7 +99,7 @@ export default function IPPage() {
 
     // 查询IP信息
     queryIP(ip);
-  }, [params.ip]);
+  }, [params.ip, getIPFromParams, router]);
 
   if (loading) {
     return (

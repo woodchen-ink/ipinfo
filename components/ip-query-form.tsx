@@ -107,6 +107,7 @@ export default function IPQueryForm() {
           cdnUrl="https://i.czl.net/cdnjs/ajax/libs/flag-icon-css/7.2.3/flags/4x3/"
           cdnSuffix="svg"
           style={style}
+          alt={`${countryCode} 国旗`}
         />
       );
     } catch {

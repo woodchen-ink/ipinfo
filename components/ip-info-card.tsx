@@ -296,6 +296,7 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
           style={style}
           className={className}
           title={currentData.country}
+          alt={`${currentData.country} 国旗`}
         />
       );
     } catch {
