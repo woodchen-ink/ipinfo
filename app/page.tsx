@@ -49,7 +49,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
+    <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
       {/* 结构化数据 */}
       <script
         type="application/ld+json"
@@ -63,7 +63,7 @@ export default function Home() {
       </div>
 
       {/* 主要内容 */}
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col">
         {/* 顶部导航区域 */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
@@ -163,18 +163,6 @@ export default function Home() {
 
 
         </div>
-
-        {/* 页脚 */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center py-6 px-6 mt-auto"
-        >
-          <div className="text-xs text-[rgb(var(--color-text-muted))]">
-            <p>© {new Date().getFullYear()} 专注于提供精确的IP地理位置信息</p>
-          </div>
-        </motion.footer>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { Toaster } from "@/components/ui/sonner";
 import DatabaseInitializer from "@/components/database-initializer";
+import Footer from "@/components/footer";
 
 
 export const metadata: Metadata = {
@@ -99,8 +100,11 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased bg-[rgb(var(--color-background))] text-[rgb(var(--color-text-primary))] transition-colors duration-300">
-        <div id="root">
-          {children}
+        <div id="root" className="min-h-screen flex flex-col">
+          <div className="flex-1">
+            {children}
+          </div>
+          <Footer />
         </div>
         <Toaster />
         <DatabaseInitializer />
