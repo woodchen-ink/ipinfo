@@ -371,4 +371,3 @@ export class DataMerger {
     return `${ip}/${prefixLength}`;
   }
 }
-
