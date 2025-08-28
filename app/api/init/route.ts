@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { startupCheckService } from "@/lib/geoip/startup-check";
 
 // GET请求：检查初始化状态
@@ -30,8 +30,39 @@ export async function GET() {
 }
 
 // POST请求：执行数据库初始化
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    // 验证授权码
+    const initApiKey = process.env.INIT_API_KEY;
+    if (!initApiKey || initApiKey === 'your-secret-init-key') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "未设置有效的初始化授权码",
+        },
+        { status: 500 }
+      );
+    }
+
+    const authHeader = request.headers.get('authorization');
+    const apiKey = request.headers.get('x-api-key');
+    
+    let providedKey = '';
+    if (authHeader?.startsWith('Bearer ')) {
+      providedKey = authHeader.slice(7);
+    } else if (apiKey) {
+      providedKey = apiKey;
+    }
+
+    if (!providedKey || providedKey !== initApiKey) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "授权码无效或缺失",
+        },
+        { status: 401 }
+      );
+    }
     // 检查是否已经初始化
     if (startupCheckService.isInitialized()) {
       return NextResponse.json({
