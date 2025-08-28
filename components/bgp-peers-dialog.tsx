@@ -81,8 +81,8 @@ export default function BGPPeersDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="!max-w-[95vw] w-full max-h-[90vh] overflow-hidden bg-white/98 backdrop-blur-sm sm:!max-w-[95vw]">
-        <DialogHeader>
+      <DialogContent className="!max-w-[95vw] w-full max-h-[90vh] overflow-hidden bg-white/98 backdrop-blur-sm sm:!max-w-[95vw] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <Network className="w-5 h-5 text-blue-500" />
             <span>BGP 对等关系</span>
@@ -92,7 +92,7 @@ export default function BGPPeersDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 overflow-y-auto">
+        <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* 加载状态 */}
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
