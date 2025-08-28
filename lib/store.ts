@@ -108,7 +108,7 @@ export const useIPQueryStore = create<IPQueryState>((set, get) => ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ip: queryIP }),
+        body: JSON.stringify({ ip: queryIP || undefined }), // 发送undefined而不是空字符串
       });
 
       if (!response.ok) {
