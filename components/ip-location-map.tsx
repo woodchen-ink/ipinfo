@@ -207,22 +207,6 @@ export default function IPLocationMap({
         transition={{ duration: 0.5 }}
         className={`bg-[rgb(var(--color-glass-background))] backdrop-blur-sm rounded-2xl shadow-lg border border-[rgb(var(--color-border))] overflow-hidden transition-colors duration-300 ${className}`}
       >
-        {/* 简化头部信息 */}
-        <div className="px-6 py-4 border-b border-[rgb(var(--color-border))] transition-colors duration-300">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-[rgb(var(--color-surface-hover))] transition-colors duration-300">
-              <MapPin className="w-5 h-5 text-gray-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">
-                地理位置
-              </h3>
-              <p className="text-sm text-[rgb(var(--color-text-secondary))]">
-                {formatLocation()}
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* 占位符内容 */}
         <div className="flex items-center justify-center h-64 bg-gradient-to-br from-[rgb(var(--color-background-secondary))] to-[rgb(var(--color-surface-hover))] transition-colors duration-300">

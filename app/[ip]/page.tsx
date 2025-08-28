@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { IPInfo } from "@/lib/store";
 import { isValidIP, detectIPVersion } from "@/lib/ip-detection";
 import IPInfoCard from "@/components/ip-info-card";
-import IPLocationMap from "@/components/ip-location-map";
 import SimpleIPQueryForm from "@/components/simple-ip-query-form";
 import ThemeToggle from "@/components/theme-toggle";
 
@@ -228,11 +227,6 @@ export default function IPPage() {
               <>
                 {/* IP信息卡片 */}
                 <IPInfoCard ipData={ipInfo} />
-
-                {/* 地图显示 */}
-                {ipInfo.location && ipInfo.location.latitude !== 0 && ipInfo.location.longitude !== 0 && (
-                  <IPLocationMap ipData={ipInfo} />
-                )}
               </>
             )}
           </div>

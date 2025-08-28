@@ -17,7 +17,7 @@ export class GeocodeService {
       requestTimeout: 15000, // 增加到15秒，给Nominatim API更多时间
       maxRetries: 2, // 减少重试次数，避免总时间过长
       rateLimitDelay: 1000, // 1秒
-      nominatimBaseUrl: "https://map.447654.xyz/search",
+      nominatimBaseUrl: "https://nominatim.openstreetmap.org/ui/search.html",
       ...config,
     };
 
