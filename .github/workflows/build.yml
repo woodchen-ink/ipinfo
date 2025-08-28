@@ -43,7 +43,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -55,10 +55,3 @@ jobs:
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
             NODE_ENV=production
-
-      - name: Dokploy Deployment
-        uses: benbristow/dokploy-deploy-action@0.0.1
-        with:
-          auth_token: ${{ secrets.DOKPLOY_AUTH_TOKEN }}
-          application_id: ${{ secrets.DOKPLOY_APPLICATION_ID }}
-          dokploy_url: ${{ secrets.DOKPLOY_URL }}
