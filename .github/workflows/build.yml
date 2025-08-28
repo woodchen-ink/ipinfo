@@ -55,21 +55,3 @@ jobs:
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           build-args: |
             NODE_ENV=production
-
-      - name: Execute deployment commands on server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-
-            # 拉取镜像
-            docker pull ghcr.io/woodchen-ink/ipinfo:latest
-
-            # 停止并删除容器
-            docker stop ipinfo || true
-            docker rm ipinfo || true
-
-            # 启动容器
-            docker compose -f /opt/1panel/docker/compose/ipinfo/docker-compose.yml up -d
