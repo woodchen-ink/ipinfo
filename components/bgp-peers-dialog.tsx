@@ -81,7 +81,7 @@ export default function BGPPeersDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="!max-w-[95vw] w-full max-h-[90vh] overflow-hidden bg-white/98 backdrop-blur-sm sm:!max-w-[95vw] flex flex-col">
+      <DialogContent className="!max-w-[95vw] w-full max-h-[90vh] overflow-hidden bg-white/98 backdrop-blur-sm sm:!max-w-7xl flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <Network className="w-5 h-5 text-blue-500" />
@@ -258,10 +258,10 @@ export default function BGPPeersDialog({
                     </span>
                   </div>
                   
-                  <div className="max-h-64 overflow-y-auto space-y-2">
+                  <div className="space-y-2">
                     {(protocolType === 'ipv4' ? bgpData.ipv4Peers :
                       protocolType === 'ipv6' ? bgpData.ipv6Peers :
-                      bgpData.allPeers).slice(0, 20).map((peer) => (
+                      bgpData.allPeers).map((peer) => (
                       <div 
                         key={peer.asn}
                         className="flex items-center justify-between p-3 bg-[rgb(var(--color-surface-hover))] rounded-lg border border-[rgb(var(--color-border))] transition-colors duration-300"
