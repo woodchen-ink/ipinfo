@@ -55,7 +55,7 @@ interface MaxMindResponse {
  * 当本地数据库查询失败时使用
  */
 export class MaxMindFallbackService {
-  private readonly baseUrl = "https://geoip.maxmind.com/geoip/v2.1";
+  private readonly baseUrl = "https://geolite.info/geoip/v2.1";
   private readonly accountId: string | null;
   private readonly licenseKey: string | null;
   
