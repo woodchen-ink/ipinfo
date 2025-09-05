@@ -4,6 +4,8 @@ import { globalIPCache } from "./cache";
 import { GeoIPError } from "./types";
 import { IPInfo } from "../store";
 import { isPrivateIP, detectIPVersion } from "../ip-detection";
+import { maxmindFallback } from "./maxmind-fallback";
+import { ipinfoFallback } from "./ipinfo-fallback";
 
 /**
  * 统一的IP地理位置查询接口
@@ -68,6 +70,38 @@ export class GeoIPService {
       return mergedResult;
     } catch (error) {
       console.error("IP查询失败:", error);
+
+      // 尝试使用后备服务链：MaxMind API -> IPInfo.io
+      
+      // 1. 尝试MaxMind Web API
+      try {
+        console.log(`尝试使用MaxMind Web API后备服务查询IP: ${ip}`);
+        const maxmindResult = await maxmindFallback.queryIP(ip);
+        
+        if (maxmindResult) {
+          console.log(`MaxMind Web API后备查询成功: ${ip}`);
+          // 缓存后备结果
+          globalIPCache.set(ip, maxmindResult);
+          return maxmindResult;
+        }
+      } catch (maxmindError) {
+        console.error("MaxMind Web API后备查询失败:", maxmindError);
+      }
+      
+      // 2. 如果MaxMind API也失败，尝试IPInfo.io
+      try {
+        console.log(`尝试使用IPInfo.io后备服务查询IP: ${ip}`);
+        const ipinfoResult = await ipinfoFallback.queryIP(ip);
+        
+        if (ipinfoResult) {
+          console.log(`IPInfo.io后备查询成功: ${ip}`);
+          // 缓存后备结果
+          globalIPCache.set(ip, ipinfoResult);
+          return ipinfoResult;
+        }
+      } catch (ipinfoError) {
+        console.error("IPInfo.io后备查询也失败:", ipinfoError);
+      }
 
       // 如果查询失败，返回基础信息
       if (error instanceof GeoIPError) {
