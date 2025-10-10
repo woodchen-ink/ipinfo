@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Code2, Globe, MessageCircle, Menu, X } from "lucide-react";
+import { ArrowLeft, Code2, Globe, MessageCircle, Menu, X, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/theme-toggle";
 
 // 定义内容区域类型
-type SectionType = 'url-query' | 'api-usage' | 'feedback';
+type SectionType = 'url-query' | 'api-usage' | 'rate-limit' | 'feedback';
 
 interface Section {
   id: SectionType;
@@ -131,6 +131,110 @@ export default function DocsPage() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             💡 提示：API支持CORS跨域请求，可在前端直接调用
           </p>
+        </div>
+      )
+    },
+    {
+      id: 'rate-limit',
+      title: 'API 限速说明',
+      icon: Shield,
+      content: (
+        <div className="space-y-4 text-gray-700 dark:text-gray-300">
+          <p>为保障服务稳定性和公平性，我们对 API 接口实施了基于 IP 的请求频率限制：</p>
+
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-5 border border-blue-200/50 dark:border-blue-700/50">
+              <h3 className="font-semibold mb-3 flex items-center text-blue-900 dark:text-blue-100">
+                <Shield className="w-5 h-5 mr-2" />
+                限速配置（每分钟）
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded">
+                  <span className="font-mono text-blue-600 dark:text-blue-400">/api/query</span>
+                  <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full font-medium">
+                    60 次/分钟
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded">
+                  <span className="font-mono text-green-600 dark:text-green-400">/api/bgp/*</span>
+                  <span className="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 px-3 py-1 rounded-full font-medium">
+                    20 次/分钟
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded">
+                  <span className="font-mono text-purple-600 dark:text-purple-400">/api/proxy-detection</span>
+                  <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 px-3 py-1 rounded-full font-medium">
+                    10 次/分钟
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded">
+                  <span className="font-mono text-gray-600 dark:text-gray-400">其他接口</span>
+                  <span className="bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300 px-3 py-1 rounded-full font-medium">
+                    100 次/分钟
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-3 text-lg">响应头信息</h3>
+              <p className="mb-3">API 响应会包含以下限速相关的 HTTP 头：</p>
+              <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 font-mono text-sm space-y-2">
+                <div>
+                  <span className="text-blue-600 dark:text-blue-400">X-RateLimit-Limit</span>
+                  <span className="text-gray-500 dark:text-gray-400"> - 限制总数</span>
+                </div>
+                <div>
+                  <span className="text-blue-600 dark:text-blue-400">X-RateLimit-Remaining</span>
+                  <span className="text-gray-500 dark:text-gray-400"> - 剩余请求次数</span>
+                </div>
+                <div>
+                  <span className="text-blue-600 dark:text-blue-400">X-RateLimit-Reset</span>
+                  <span className="text-gray-500 dark:text-gray-400"> - 限制重置时间</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-3 text-lg">超过限制时</h3>
+              <p className="mb-3">当请求超过限制时，将返回 HTTP 429 状态码：</p>
+              <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 font-mono text-sm">
+                <div className="mb-3">
+                  <span className="inline-block bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 px-2 py-1 rounded text-xs font-medium mr-2">
+                    429 Too Many Requests
+                  </span>
+                </div>
+                <div className="bg-gray-100 dark:bg-slate-600 rounded p-3 text-xs overflow-x-auto">
+                  {`{
+  "error": "请求过于频繁，请稍后重试",
+  "message": "Rate limit exceeded. Please try again in 46 seconds.",
+  "retryAfter": 46
+}`}
+                </div>
+                <div className="mt-3 text-gray-600 dark:text-gray-400">
+                  额外的响应头：
+                </div>
+                <div className="mt-2 text-xs space-y-1">
+                  <div>
+                    <span className="text-blue-600 dark:text-blue-400">Retry-After</span>
+                    <span className="text-gray-500 dark:text-gray-400"> - 建议等待的秒数</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50">
+            <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2 flex items-center">
+              💡 使用建议
+            </h4>
+            <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+              <li>• 请合理控制请求频率，避免触发限速</li>
+              <li>• 建议实现请求重试机制，遵循 Retry-After 提示</li>
+              <li>• 可通过响应头实时监控剩余请求次数</li>
+              <li>• 限速基于客户端 IP 地址，每个 IP 独立计算</li>
+            </ul>
+          </div>
         </div>
       )
     },
@@ -286,11 +390,13 @@ export default function DocsPage() {
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                             section.id === 'url-query' ? 'bg-blue-100 dark:bg-blue-900/30' :
                             section.id === 'api-usage' ? 'bg-green-100 dark:bg-green-900/30' :
+                            section.id === 'rate-limit' ? 'bg-cyan-100 dark:bg-cyan-900/30' :
                             'bg-purple-100 dark:bg-purple-900/30'
                           }`}>
                             <section.icon className={`w-6 h-6 ${
                               section.id === 'url-query' ? 'text-blue-600 dark:text-blue-400' :
                               section.id === 'api-usage' ? 'text-green-600 dark:text-green-400' :
+                              section.id === 'rate-limit' ? 'text-cyan-600 dark:text-cyan-400' :
                               'text-purple-600 dark:text-purple-400'
                             }`} />
                           </div>

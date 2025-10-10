@@ -1,28 +1,61 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getClientIP, getUserIPVersion, isValidIP } from "@/lib/ip-detection";
+import { getRateLimiter } from "@/lib/rate-limiter";
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get("host") || "";
+  const pathname = url.pathname;
+
+  // 获取客户端IP（提前获取，避免重复调用）
+  const clientIP = getClientIP(request);
+
+  // API 路由限速检查
+  let limitResult: { allowed: boolean; remaining: number; resetTime: number; total: number } | undefined;
+  if (pathname.startsWith("/api/") && clientIP) {
+    const limiter = getRateLimiter(pathname);
+    limitResult = limiter.checkLimit(clientIP);
+
+    // 如果超过限速，返回 429 错误
+    if (!limitResult.allowed) {
+      const retryAfter = Math.ceil((limitResult.resetTime - Date.now()) / 1000);
+
+      return NextResponse.json(
+        {
+          error: "请求过于频繁，请稍后重试",
+          message: `Rate limit exceeded. Please try again in ${retryAfter} seconds.`,
+          retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": limitResult.total.toString(),
+            "X-RateLimit-Remaining": limitResult.remaining.toString(),
+            "X-RateLimit-Reset": new Date(limitResult.resetTime).toISOString(),
+            "Retry-After": retryAfter.toString(),
+          },
+        }
+      );
+    }
+  }
 
   // 解析子域名
   const subdomain = hostname.split(".")[0];
 
   // 检查是否是IP路径查询（如 /58.xx.xx.xx 或 /2001:db8::1）
-  const pathname = url.pathname;
   if (pathname !== "/" && !pathname.startsWith("/api/") && !pathname.startsWith("/_next/")) {
     // 移除开头的斜杠，获取可能的IP地址
     let possibleIP = pathname.slice(1);
-    
+
     // 处理URL解码
     possibleIP = decodeURIComponent(possibleIP);
-    
+
     // 处理IPv6地址的特殊情况
     if (possibleIP.includes("%3A")) {
       possibleIP = possibleIP.replace(/%3A/g, ":");
     }
-    
+
     // 验证是否是有效的IP地址
     if (isValidIP(possibleIP)) {
       // 这是一个有效的IP地址路径，添加到URL参数中
@@ -30,8 +63,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 获取客户端IP并添加到请求头
-  const clientIP = getClientIP(request);
+  // 添加客户端IP到请求参数
   if (clientIP) {
     url.searchParams.set("clientIP", clientIP);
   }
@@ -76,6 +108,13 @@ export function middleware(request: NextRequest) {
 
   // 安全头设置
   const response = NextResponse.rewrite(url);
+
+  // 添加限速信息到响应头（如果是 API 请求且已有限速结果）
+  if (pathname.startsWith("/api/") && clientIP && limitResult) {
+    response.headers.set("X-RateLimit-Limit", limitResult.total.toString());
+    response.headers.set("X-RateLimit-Remaining", limitResult.remaining.toString());
+    response.headers.set("X-RateLimit-Reset", new Date(limitResult.resetTime).toISOString());
+  }
 
   // 安全相关头
   response.headers.set("X-Frame-Options", "DENY");
