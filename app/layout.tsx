@@ -81,7 +81,6 @@ export default function RootLayout({
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <script defer src="https://analytics.czl.net/script.js" data-website-id="7871b00c-6f50-46e1-826a-30fc9b83e10b"></script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
