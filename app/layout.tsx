@@ -99,17 +99,7 @@ export default function RootLayout({
           }}
         />
         <Script
-          id="clarity-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(c,l,a,r,i,t,y){
-                c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
-                t=l.createElement(r);t.async=1;t.src="https://analytics.czl.net/ms/t.js?id="+ i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "tyr27bzi94");
-            `,
-          }}
+          async src="https://analytics.czl.net/script.js" data-website-id="7871b00c-6f50-46e1-826a-30fc9b83e10b"
         />
       </head>
       <body className="antialiased bg-[rgb(var(--color-background))] text-[rgb(var(--color-text-primary))] transition-colors duration-300">
