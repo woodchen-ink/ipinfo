@@ -111,6 +111,8 @@ export default function RootLayout({
         </div>
         <Toaster />
         <DatabaseInitializer />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4684536310184190"
+     crossOrigin="anonymous"></script>
       </body>
     </html>
   );
