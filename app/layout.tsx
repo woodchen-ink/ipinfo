@@ -99,7 +99,7 @@ export default function RootLayout({
           }}
         />
         <Script
-          async src="https://analytics.czl.net/script.js" data-website-id="7871b00c-6f50-46e1-826a-30fc9b83e10b"
+          async src="https://l.czl.net/script.js" data-website-id="7871b00c-6f50-46e1-826a-30fc9b83e10b"
         />
       </head>
       <body className="antialiased bg-[rgb(var(--color-background))] text-[rgb(var(--color-text-primary))] transition-colors duration-300">
