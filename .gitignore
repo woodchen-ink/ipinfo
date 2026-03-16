@@ -2,6 +2,8 @@
 
 # dependencies
 web/node_modules/*
+web/.next/*
+web/out/*
 /.pnp
 .pnp.*
 .yarn/*
