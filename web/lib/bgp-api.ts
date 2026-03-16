@@ -3,30 +3,18 @@ import { API_BASE_URL } from "@/lib/api-config";
 // BGP API 数据类型定义
 export interface BGPPeer {
   asn: number;
-  name: string;
-  description: string;
-  country_code: string;
-}
-
-export interface BGPPeersResponse {
-  status: string;
-  status_message: string;
-  data: {
-    ipv4_peers: BGPPeer[];
-    ipv6_peers: BGPPeer[];
-  };
-  "@meta": {
-    time_zone: string;
-    api_version: number;
-    execution_time: string;
-  };
+  type: string; // "left" (upstream), "right" (downstream), "uncertain"
+  power: number;
+  v4Peer: number;
+  v6Peer: number;
 }
 
 export interface ProcessedBGPData {
   centerAsn: number;
   centerName: string;
-  ipv4Peers: BGPPeer[];
-  ipv6Peers: BGPPeer[];
+  upstreams: BGPPeer[];
+  downstreams: BGPPeer[];
+  uncertain: BGPPeer[];
   allPeers: BGPPeer[];
 }
 
@@ -65,7 +53,7 @@ class BGPCache {
 const bgpCache = new BGPCache();
 
 /**
- * 查询 ASN 的 BGP 对等关系
+ * 查询 ASN 的 BGP 邻居关系
  */
 export async function fetchBGPPeers(asn: number): Promise<ProcessedBGPData> {
   // 检查缓存

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
+	"sync"
 
 	"github.com/woodchen-ink/ipinfo-server/cache"
 	"github.com/woodchen-ink/ipinfo-server/model"
@@ -12,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// BGPService queries BGP peer information from bgpview.io.
+// BGPService queries BGP peer information from RIPEstat.
 type BGPService struct {
 	cache  *cache.GenericCache
 	logger *zap.Logger
@@ -22,7 +24,7 @@ func NewBGPService(bgpCache *cache.GenericCache, logger *zap.Logger) *BGPService
 	return &BGPService{cache: bgpCache, logger: logger}
 }
 
-// QueryPeers fetches and deduplicates BGP peers for the given ASN.
+// QueryPeers fetches BGP neighbours for the given ASN from RIPEstat.
 func (s *BGPService) QueryPeers(ctx context.Context, asn int) (*model.ProcessedBGPData, error) {
 	// Check cache
 	cacheKey := fmt.Sprintf("%d", asn)
@@ -36,41 +38,40 @@ func (s *BGPService) QueryPeers(ctx context.Context, asn int) (*model.ProcessedB
 		}
 	}
 
-	// Call bgpview.io
-	url := fmt.Sprintf("https://api.bgpview.io/asn/%d/peers", asn)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "IPInfo-Query-App/1.0")
+	// Fetch neighbours and ASN overview concurrently
+	var (
+		neighbourResp model.RIPEStatResponse
+		overviewResp  model.RIPEStatOverviewResponse
+		neighbourErr  error
+		overviewErr   error
+		wg            sync.WaitGroup
+	)
 
-	resp, err := httpclient.Default.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("BGP查询超时")
-	}
-	defer resp.Body.Close()
+	wg.Add(2)
 
-	switch resp.StatusCode {
-	case http.StatusOK:
-		// continue
-	case http.StatusNotFound:
-		return nil, fmt.Errorf("ASN %d 未找到", asn)
-	case http.StatusTooManyRequests:
-		return nil, fmt.Errorf("BGP API请求过于频繁")
-	case http.StatusServiceUnavailable:
-		return nil, fmt.Errorf("BGP服务暂时不可用")
-	default:
-		return nil, fmt.Errorf("BGP查询失败: HTTP %d", resp.StatusCode)
-	}
+	go func() {
+		defer wg.Done()
+		neighbourResp, neighbourErr = s.fetchNeighbours(ctx, asn)
+	}()
 
-	var bgpResp model.BGPViewResponse
-	if err := json.NewDecoder(resp.Body).Decode(&bgpResp); err != nil {
-		return nil, fmt.Errorf("BGP响应解析失败: %w", err)
+	go func() {
+		defer wg.Done()
+		overviewResp, overviewErr = s.fetchOverview(ctx, asn)
+	}()
+
+	wg.Wait()
+
+	if neighbourErr != nil {
+		return nil, neighbourErr
 	}
 
-	// Process and deduplicate
-	result := s.processResponse(asn, &bgpResp)
+	// Build result
+	centerName := fmt.Sprintf("AS%d", asn)
+	if overviewErr == nil && overviewResp.Data.Holder != "" {
+		centerName = overviewResp.Data.Holder
+	}
+
+	result := s.processResponse(asn, centerName, &neighbourResp)
 
 	// Cache result
 	if s.cache != nil {
@@ -80,53 +81,109 @@ func (s *BGPService) QueryPeers(ctx context.Context, asn int) (*model.ProcessedB
 	return result, nil
 }
 
-func (s *BGPService) processResponse(asn int, resp *model.BGPViewResponse) *model.ProcessedBGPData {
+func (s *BGPService) fetchNeighbours(ctx context.Context, asn int) (model.RIPEStatResponse, error) {
+	url := fmt.Sprintf("https://stat.ripe.net/data/asn-neighbours/data.json?resource=AS%d", asn)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return model.RIPEStatResponse{}, err
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := httpclient.Default.Do(req)
+	if err != nil {
+		return model.RIPEStatResponse{}, fmt.Errorf("BGP查询超时")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return model.RIPEStatResponse{}, fmt.Errorf("BGP查询失败: HTTP %d", resp.StatusCode)
+	}
+
+	var result model.RIPEStatResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return model.RIPEStatResponse{}, fmt.Errorf("BGP响应解析失败: %w", err)
+	}
+
+	if result.Status != "ok" {
+		return model.RIPEStatResponse{}, fmt.Errorf("BGP查询失败: %s", result.Status)
+	}
+
+	return result, nil
+}
+
+func (s *BGPService) fetchOverview(ctx context.Context, asn int) (model.RIPEStatOverviewResponse, error) {
+	url := fmt.Sprintf("https://stat.ripe.net/data/as-overview/data.json?resource=AS%d", asn)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return model.RIPEStatOverviewResponse{}, err
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := httpclient.Default.Do(req)
+	if err != nil {
+		return model.RIPEStatOverviewResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return model.RIPEStatOverviewResponse{}, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	var result model.RIPEStatOverviewResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return model.RIPEStatOverviewResponse{}, err
+	}
+
+	return result, nil
+}
+
+func (s *BGPService) processResponse(asn int, centerName string, resp *model.RIPEStatResponse) *model.ProcessedBGPData {
 	result := &model.ProcessedBGPData{
 		CenterASN:  asn,
-		CenterName: fmt.Sprintf("AS%d", asn),
+		CenterName: centerName,
 	}
 
-	// Convert IPv4 peers
-	for _, p := range resp.Data.IPv4Peers {
-		result.IPv4Peers = append(result.IPv4Peers, model.BGPPeer{
-			ASN:         p.ASN,
-			Name:        p.Name,
-			Description: p.Description,
-			CountryCode: p.CountryCode,
+	for _, n := range resp.Data.Neighbours {
+		peer := model.BGPPeer{
+			ASN:    n.ASN,
+			Type:   n.Type,
+			Power:  n.Power,
+			V4Peer: n.V4Peers,
+			V6Peer: n.V6Peers,
+		}
+
+		switch n.Type {
+		case "left":
+			result.Upstreams = append(result.Upstreams, peer)
+		case "right":
+			result.Downstreams = append(result.Downstreams, peer)
+		default:
+			result.Uncertain = append(result.Uncertain, peer)
+		}
+
+		result.AllPeers = append(result.AllPeers, peer)
+	}
+
+	// Sort by power descending
+	sortByPower := func(peers []model.BGPPeer) {
+		sort.Slice(peers, func(i, j int) bool {
+			return peers[i].Power > peers[j].Power
 		})
 	}
-
-	// Convert IPv6 peers
-	for _, p := range resp.Data.IPv6Peers {
-		result.IPv6Peers = append(result.IPv6Peers, model.BGPPeer{
-			ASN:         p.ASN,
-			Name:        p.Name,
-			Description: p.Description,
-			CountryCode: p.CountryCode,
-		})
-	}
-
-	// Deduplicate all peers
-	seen := make(map[int]bool)
-	for _, p := range result.IPv4Peers {
-		if !seen[p.ASN] {
-			seen[p.ASN] = true
-			result.AllPeers = append(result.AllPeers, p)
-		}
-	}
-	for _, p := range result.IPv6Peers {
-		if !seen[p.ASN] {
-			seen[p.ASN] = true
-			result.AllPeers = append(result.AllPeers, p)
-		}
-	}
+	sortByPower(result.Upstreams)
+	sortByPower(result.Downstreams)
+	sortByPower(result.Uncertain)
+	sortByPower(result.AllPeers)
 
 	// Ensure non-nil slices for JSON
-	if result.IPv4Peers == nil {
-		result.IPv4Peers = []model.BGPPeer{}
+	if result.Upstreams == nil {
+		result.Upstreams = []model.BGPPeer{}
 	}
-	if result.IPv6Peers == nil {
-		result.IPv6Peers = []model.BGPPeer{}
+	if result.Downstreams == nil {
+		result.Downstreams = []model.BGPPeer{}
+	}
+	if result.Uncertain == nil {
+		result.Uncertain = []model.BGPPeer{}
 	}
 	if result.AllPeers == nil {
 		result.AllPeers = []model.BGPPeer{}

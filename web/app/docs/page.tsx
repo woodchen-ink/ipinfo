@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Code2, Globe, MessageCircle, Menu, X, Shield } from "lucide-react";
+import { ArrowLeft, Code2, Globe, MessageCircle, Menu, X, Shield, Database } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/theme-toggle";
 
 // 定义内容区域类型
-type SectionType = 'url-query' | 'api-usage' | 'rate-limit' | 'feedback';
+type SectionType = 'url-query' | 'api-usage' | 'rate-limit' | 'data-sources' | 'feedback';
 
 interface Section {
   id: SectionType;
@@ -143,7 +143,7 @@ export default function DocsPage() {
           <p>为保障服务稳定性和公平性，我们对 API 接口实施了基于 IP 的请求频率限制：</p>
 
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-5 border border-blue-200/50 dark:border-blue-700/50">
+            <div className="bg-linear-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-5 border border-blue-200/50 dark:border-blue-700/50">
               <h3 className="font-semibold mb-3 flex items-center text-blue-900 dark:text-blue-100">
                 <Shield className="w-5 h-5 mr-2" />
                 限速配置（每分钟）
@@ -239,13 +239,166 @@ export default function DocsPage() {
       )
     },
     {
+      id: 'data-sources',
+      title: '数据来源',
+      icon: Database,
+      content: (
+        <div className="space-y-6 text-gray-700 dark:text-gray-300">
+          <p>本服务整合多个权威数据源，通过智能合并算法提供尽可能准确的 IP 地理位置信息。</p>
+
+          {/* 主要数据源 */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">GeoIP 数据库</h3>
+
+            <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-5 border border-blue-200/50 dark:border-blue-700/50">
+              <div className="flex items-center space-x-2 mb-3">
+                <span className="inline-block bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2.5 py-1 rounded text-xs font-medium">
+                  MaxMind
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">— 主数据源</span>
+              </div>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-start space-x-2">
+                  <span className="text-blue-500 mt-0.5">•</span>
+                  <span><strong>GeoLite2-City</strong> — 城市级地理定位（国家、省份、城市、经纬度、时区）</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-blue-500 mt-0.5">•</span>
+                  <span><strong>GeoLite2-ASN</strong> — 自治系统号和 ISP 信息</span>
+                </li>
+              </ul>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                由 MaxMind 提供，全球覆盖，定期更新
+              </p>
+            </div>
+
+            <div className="bg-linear-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-5 border border-green-200/50 dark:border-green-700/50">
+              <div className="flex items-center space-x-2 mb-3">
+                <span className="inline-block bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 px-2.5 py-1 rounded text-xs font-medium">
+                  GeoCN
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">— 中国区增强</span>
+              </div>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-start space-x-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  <span>针对中国大陆 IP 提供更精准的省份、城市、区县级定位</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  <span>包含 86 个中国 ASN 到运营商的精确映射（电信、联通、移动等）</span>
+                </li>
+              </ul>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                当检测到中国 IP 时自动启用，与 MaxMind 数据智能合并
+              </p>
+            </div>
+          </div>
+
+          {/* IP 特征检测 */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">IP 特征检测</h3>
+
+            <div className="bg-linear-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg p-5 border border-orange-200/50 dark:border-orange-700/50">
+              <div className="flex items-center space-x-2 mb-3">
+                <a
+                  href="https://github.com/NetworkCats/OpenProxyDB"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 px-2.5 py-1 rounded text-xs font-medium hover:bg-orange-200 dark:hover:bg-orange-800/50 transition-colors"
+                >
+                  OpenProxyDB ↗
+                </a>
+                <span className="text-sm text-gray-500 dark:text-gray-400">— 代理与特征识别</span>
+              </div>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-start space-x-2">
+                  <span className="text-orange-500 mt-0.5">•</span>
+                  <span>代理/VPN/Tor/Hosting/CDN/校园网/匿名网络检测</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-orange-500 mt-0.5">•</span>
+                  <span>提供辅助 GeoIP 数据用于交叉验证</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-orange-500 mt-0.5">•</span>
+                  <span>由 NetworkCats 社区维护的开源代理 IP 数据库</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-orange-500 mt-0.5">•</span>
+                  <span>部分 GeoIP 数据基于 DB-IP 数据库</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 地址增强 */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">地址增强</h3>
+
+            <div className="bg-linear-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg p-5 border border-yellow-200/50 dark:border-yellow-700/50">
+              <div className="flex items-center space-x-2 mb-3">
+                <span className="inline-block bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 px-2.5 py-1 rounded text-xs font-medium">
+                  美团
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">— 溯源增强</span>
+              </div>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-start space-x-2">
+                  <span className="text-yellow-600 mt-0.5">•</span>
+                  <span>通过美团溯源 API 获取更详细的中国大陆地址信息</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-yellow-600 mt-0.5">•</span>
+                  <span>可在查询结果中点击「溯源」按钮手动触发</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 回退机制 */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">回退机制</h3>
+
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-5">
+              <p className="text-sm mb-3">当本地 MMDB 数据库无法返回结果时，系统会依次尝试以下在线数据源：</p>
+              <div className="flex items-center space-x-3 text-sm">
+                <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1.5 rounded font-medium">
+                  MMDB 本地库
+                </span>
+                <span className="text-gray-400">→</span>
+                <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 px-3 py-1.5 rounded font-medium">
+                  MaxMind Web API
+                </span>
+                <span className="text-gray-400">→</span>
+                <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 px-3 py-1.5 rounded font-medium">
+                  IPInfo.io API
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
+            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+              数据合并策略
+            </h4>
+            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+              <li>• 以 MaxMind 为基础数据，GeoCN 对中国 IP 进行增强补充</li>
+              <li>• 查询结果中的来源标签（MaxMind / GeoCN / MeiTuan）标识各字段数据来源</li>
+              <li>• 基于数据准确度和来源计算智能缓存 TTL（5 分钟 ~ 3.6 小时）</li>
+            </ul>
+          </div>
+        </div>
+      )
+    },
+    {
       id: 'feedback',
       title: '问题反馈',
       icon: MessageCircle,
       content: (
         <div className="space-y-4 text-gray-700 dark:text-gray-300">
           <p>如果您在使用过程中遇到问题或有改进建议，欢迎反馈：</p>
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-6 border border-purple-200/50 dark:border-purple-700/50">
+          <div className="bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-6 border border-purple-200/50 dark:border-purple-700/50">
             <a
               href="https://www.sunai.net/t/topic/946"
               target="_blank"
@@ -280,7 +433,7 @@ export default function DocsPage() {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
+    <div className="bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
       {/* 背景装饰 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -right-32 w-64 h-64 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-3xl transition-colors duration-500"></div>
@@ -329,7 +482,7 @@ export default function DocsPage() {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -300, opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="fixed md:sticky top-[73px] left-0 z-40 w-64 h-[calc(100vh-73px)] bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-r border-gray-200/50 dark:border-gray-700/50 overflow-y-auto"
+                className="fixed md:sticky top-18.25 left-0 z-40 w-64 h-[calc(100vh-73px)] bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-r border-gray-200/50 dark:border-gray-700/50 overflow-y-auto"
               >
                 <nav className="p-4 space-y-2">
                   {sections.map((section) => {
@@ -347,7 +500,7 @@ export default function DocsPage() {
                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50'
                         }`}
                       >
-                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        <Icon className="w-5 h-5 shrink-0" />
                         <span className="font-medium">{section.title}</span>
                       </button>
                     );
@@ -391,12 +544,14 @@ export default function DocsPage() {
                             section.id === 'url-query' ? 'bg-blue-100 dark:bg-blue-900/30' :
                             section.id === 'api-usage' ? 'bg-green-100 dark:bg-green-900/30' :
                             section.id === 'rate-limit' ? 'bg-cyan-100 dark:bg-cyan-900/30' :
+                            section.id === 'data-sources' ? 'bg-orange-100 dark:bg-orange-900/30' :
                             'bg-purple-100 dark:bg-purple-900/30'
                           }`}>
                             <section.icon className={`w-6 h-6 ${
                               section.id === 'url-query' ? 'text-blue-600 dark:text-blue-400' :
                               section.id === 'api-usage' ? 'text-green-600 dark:text-green-400' :
                               section.id === 'rate-limit' ? 'text-cyan-600 dark:text-cyan-400' :
+                              section.id === 'data-sources' ? 'text-orange-600 dark:text-orange-400' :
                               'text-purple-600 dark:text-purple-400'
                             }`} />
                           </div>
