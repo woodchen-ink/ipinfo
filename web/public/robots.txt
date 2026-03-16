@@ -6,7 +6,7 @@ Allow: /api/query
 Disallow: /api/
 
 # 站点地图
-Sitemap: https://ipinfo.czl.net/sitemap.xml
+Sitemap: https://ip.czl.net/sitemap.xml
 
 # 爬取延迟（毫秒）
 Crawl-delay: 1

@@ -8,7 +8,7 @@ import Script from "next/script";
 
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ipinfo.czl.net'),
+  metadataBase: new URL('https://ip.czl.net'),
   title: {
     default: "IP地理位置查询工具 - 精确查询IPv4/IPv6地址信息",
     template: "%s | IP查询工具"
@@ -30,12 +30,12 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://ipinfo.czl.net",
+    canonical: "https://ip.czl.net",
   },
   openGraph: {
     type: "website",
     locale: "zh_CN",
-    url: "https://ipinfo.czl.net",
+    url: "https://ip.czl.net",
     title: "IP地理位置查询工具 - 精确查询IPv4/IPv6地址信息",
     description: "专业的IP地理位置查询工具，支持IPv4/IPv6地址查询，提供详细的地理位置、运营商、ASN、网络拓扑等信息。快速、准确、免费的IP定位服务。",
     siteName: "IP查询工具",

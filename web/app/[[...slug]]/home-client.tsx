@@ -39,7 +39,7 @@ export default function Home() {
     "@type": "WebApplication",
     "name": "IP地理位置查询工具",
     "description": "专业的IP地理位置查询工具，支持IPv4/IPv6地址查询，提供详细的地理位置、运营商、ASN、网络拓扑等信息。",
-    "url": "https://ipinfo.czl.net",
+    "url": "https://ip.czl.net",
     "applicationCategory": "UtilityApplication",
     "operatingSystem": "Any",
     "offers": {

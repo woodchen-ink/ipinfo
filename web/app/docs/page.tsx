@@ -48,12 +48,12 @@ export default function DocsPage() {
               <div>
                 <span className="text-gray-500 dark:text-gray-400">IPv4 示例：</span>
                 <br />
-                <span className="text-blue-600 dark:text-blue-400">https://ipinfo.czl.net/8.8.8.8</span>
+                <span className="text-blue-600 dark:text-blue-400">https://ip.czl.net/8.8.8.8</span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">IPv6 示例：</span>
                 <br />
-                <span className="text-blue-600 dark:text-blue-400">https://ipinfo.czl.net/2001:4860:4860::8888</span>
+                <span className="text-blue-600 dark:text-blue-400">https://ip.czl.net/2001:4860:4860::8888</span>
               </div>
             </div>
           </div>
