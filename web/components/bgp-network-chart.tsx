@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import { ProcessedBGPData, BGPPeer } from '@/lib/bgp-api';
-import { Globe, ZoomIn, ZoomOut, RotateCcw, Download, ArrowUpRight, ArrowDownRight, HelpCircle } from 'lucide-react';
+import { Globe, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
 import { toast } from "sonner";
 
 interface NetworkNode {

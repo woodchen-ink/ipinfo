@@ -45,3 +45,4 @@ next-env.d.ts
 lib/data/
 CLAUDE.md
 .claude/settings.local.json
+*.exe

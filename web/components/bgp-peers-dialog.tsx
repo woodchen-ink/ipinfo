@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogDescription 
+  DialogDescription
 } from '@/components/ui/dialog';
-import { fetchBGPPeers, ProcessedBGPData } from '@/lib/bgp-api';
+import { fetchBGPPeers, ProcessedBGPData, BGPPeer } from '@/lib/bgp-api';
 import BGPNetworkChart from '@/components/bgp-network-chart';
-import { Loader2, AlertCircle, Network, Globe, Hash, Layers } from 'lucide-react';
+import { Loader2, AlertCircle, Network, Globe, Hash, Layers, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface BGPPeersDialogProps {
@@ -20,37 +20,37 @@ interface BGPPeersDialogProps {
   onClose: () => void;
 }
 
-type ProtocolType = 'ipv4' | 'ipv6' | 'both';
+type ViewType = 'upstream' | 'downstream' | 'all';
 
-export default function BGPPeersDialog({ 
-  asn, 
-  asnName, 
-  isOpen, 
-  onClose 
+export default function BGPPeersDialog({
+  asn,
+  asnName,
+  isOpen,
+  onClose
 }: BGPPeersDialogProps) {
   const [bgpData, setBgpData] = useState<ProcessedBGPData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [protocolType, setProtocolType] = useState<ProtocolType>('both');
+  const [viewType, setViewType] = useState<ViewType>('all');
 
   const fetchBGPData = useCallback(async () => {
     if (!asn) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const data = await fetchBGPPeers(asn);
       setBgpData(data);
-      
+
       toast.success("BGP 数据获取成功", {
-        description: `找到 ${data.allPeers.length} 个对等关系`,
+        description: `找到 ${data.allPeers.length} 个邻居关系`,
         duration: 1000,
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'BGP 数据获取失败';
       setError(errorMessage);
-      
+
       toast.error("BGP 数据获取失败", {
         description: errorMessage,
         duration: 4000,
@@ -60,14 +60,12 @@ export default function BGPPeersDialog({
     }
   }, [asn]);
 
-  // 当对话框打开且 ASN 改变时，获取数据
   useEffect(() => {
     if (isOpen && asn) {
       fetchBGPData();
     }
   }, [isOpen, asn, fetchBGPData]);
 
-  // 当对话框关闭时重置状态
   useEffect(() => {
     if (!isOpen) {
       setBgpData(null);
@@ -79,16 +77,40 @@ export default function BGPPeersDialog({
     fetchBGPData();
   };
 
+  const getDisplayPeers = (data: ProcessedBGPData): BGPPeer[] => {
+    switch (viewType) {
+      case 'upstream': return data.upstreams;
+      case 'downstream': return data.downstreams;
+      default: return data.allPeers;
+    }
+  };
+
+  const getPeerTypeLabel = (type: string) => {
+    switch (type) {
+      case 'left': return '上游';
+      case 'right': return '下游';
+      default: return '不确定';
+    }
+  };
+
+  const getPeerTypeColor = (type: string) => {
+    switch (type) {
+      case 'left': return 'bg-blue-500';
+      case 'right': return 'bg-orange-500';
+      default: return 'bg-gray-400';
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="!max-w-[95vw] w-full max-h-[90vh] overflow-hidden bg-white/98 backdrop-blur-sm sm:!max-w-7xl flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <Network className="w-5 h-5 text-blue-500" />
-            <span>BGP 对等关系</span>
+            <span>BGP 邻居关系</span>
           </DialogTitle>
           <DialogDescription>
-            AS{asn} {asnName && `(${asnName})`} 的 BGP 对等连接关系图
+            AS{asn} {asnName && `(${asnName})`} 的 BGP 邻居连接关系图 (数据来源: RIPEstat)
           </DialogDescription>
         </DialogHeader>
 
@@ -136,46 +158,44 @@ export default function BGPPeersDialog({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
                   <div className="flex items-center space-x-2">
-                    <Hash className="w-4 h-4 text-blue-500" />
+                    <Hash className="w-4 h-4 text-green-500" />
                     <span className="text-sm text-[rgb(var(--color-text-secondary))]">目标 ASN</span>
                   </div>
                   <p className="text-lg font-bold text-[rgb(var(--color-text-primary))] mt-1">
                     AS{bgpData.centerAsn}
                   </p>
+                  <p className="text-xs text-[rgb(var(--color-text-muted))] truncate">
+                    {bgpData.centerName}
+                  </p>
                 </div>
-                
+
+                <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
+                  <div className="flex items-center space-x-2">
+                    <ArrowUpRight className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">上游</span>
+                  </div>
+                  <p className="text-lg font-bold text-[rgb(var(--color-text-primary))] mt-1">
+                    {bgpData.upstreams.length}
+                  </p>
+                </div>
+
+                <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
+                  <div className="flex items-center space-x-2">
+                    <ArrowDownRight className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">下游</span>
+                  </div>
+                  <p className="text-lg font-bold text-[rgb(var(--color-text-primary))] mt-1">
+                    {bgpData.downstreams.length}
+                  </p>
+                </div>
+
                 <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
                   <div className="flex items-center space-x-2">
                     <Layers className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">
-                      {protocolType === 'ipv4' ? 'IPv4 对等' : 
-                       protocolType === 'ipv6' ? 'IPv6 对等' : '总对等数'}
-                    </span>
+                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">总邻居数</span>
                   </div>
                   <p className="text-lg font-bold text-[rgb(var(--color-text-primary))] mt-1">
-                    {protocolType === 'ipv4' ? bgpData.ipv4Peers.length :
-                     protocolType === 'ipv6' ? bgpData.ipv6Peers.length :
-                     bgpData.allPeers.length}
-                  </p>
-                </div>
-                
-                <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">IPv4 对等</span>
-                  </div>
-                  <p className="text-lg font-bold text-[rgb(var(--color-text-primary))] mt-1">
-                    {bgpData.ipv4Peers.length}
-                  </p>
-                </div>
-                
-                <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">IPv6 对等</span>
-                  </div>
-                  <p className="text-lg font-bold text-[rgb(var(--color-text-primary))] mt-1">
-                    {bgpData.ipv6Peers.length}
+                    {bgpData.allPeers.length}
                   </p>
                 </div>
               </div>
@@ -189,35 +209,35 @@ export default function BGPPeersDialog({
                       网络拓扑图
                     </h3>
                   </div>
-                  
-                  {/* 协议切换控件 */}
+
+                  {/* 视图切换 */}
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">协议类型:</span>
+                    <span className="text-sm text-[rgb(var(--color-text-secondary))]">显示:</span>
                     <div className="flex bg-[rgb(var(--color-surface-hover))] rounded-lg p-1 border border-[rgb(var(--color-border))]">
                       <button
-                        onClick={() => setProtocolType('ipv4')}
+                        onClick={() => setViewType('upstream')}
                         className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
-                          protocolType === 'ipv4'
+                          viewType === 'upstream'
                             ? 'bg-blue-500 text-white'
                             : 'text-[rgb(var(--color-text-secondary))] hover:text-[rgb(var(--color-text-primary))]'
                         }`}
                       >
-                        IPv4
+                        上游
                       </button>
                       <button
-                        onClick={() => setProtocolType('ipv6')}
+                        onClick={() => setViewType('downstream')}
                         className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
-                          protocolType === 'ipv6'
-                            ? 'bg-purple-500 text-white'
+                          viewType === 'downstream'
+                            ? 'bg-orange-500 text-white'
                             : 'text-[rgb(var(--color-text-secondary))] hover:text-[rgb(var(--color-text-primary))]'
                         }`}
                       >
-                        IPv6
+                        下游
                       </button>
                       <button
-                        onClick={() => setProtocolType('both')}
+                        onClick={() => setViewType('all')}
                         className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
-                          protocolType === 'both'
+                          viewType === 'all'
                             ? 'bg-emerald-500 text-white'
                             : 'text-[rgb(var(--color-text-secondary))] hover:text-[rgb(var(--color-text-primary))]'
                         }`}
@@ -227,97 +247,59 @@ export default function BGPPeersDialog({
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-[rgb(var(--color-surface))] rounded-lg p-4 border border-[rgb(var(--color-border))] transition-colors duration-300">
-                  <BGPNetworkChart 
+                  <BGPNetworkChart
                     data={bgpData}
-                    protocolType={protocolType}
+                    viewType={viewType}
                     className="min-h-[400px]"
                   />
                 </div>
-                
+
                 <div className="text-xs text-[rgb(var(--color-text-muted))] space-y-1">
-                  <p>• 拖拽节点可以调整布局，滚轮可以缩放图表</p>
-                  <p>• 鼠标悬停在节点上查看详细信息</p>
-                  <p>• 不同颜色的连线表示不同类型的对等关系</p>
-                  <p>• 蓝色实线表示IPv4连接，紫色虚线表示IPv6连接</p>
+                  <p>* 上游 (left): 该 ASN 从其接收路由的提供者</p>
+                  <p>* 下游 (right): 从该 ASN 接收路由的客户</p>
+                  <p>* 节点大小表示观测到的路径数量，鼠标悬停查看详情</p>
                 </div>
               </div>
 
-              {/* 对等节点列表 */}
+              {/* 邻居节点列表 */}
               {bgpData.allPeers.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-[rgb(var(--color-text-primary))]">
-                      对等节点列表
+                      邻居节点列表
                     </h3>
                     <span className="text-sm text-[rgb(var(--color-text-secondary))]">
-                      {protocolType === 'ipv4' ? `IPv4: ${bgpData.ipv4Peers.length} 个节点` :
-                       protocolType === 'ipv6' ? `IPv6: ${bgpData.ipv6Peers.length} 个节点` :
-                       `共 ${bgpData.allPeers.length} 个节点`}
+                      {viewType === 'upstream' ? `上游: ${bgpData.upstreams.length} 个` :
+                       viewType === 'downstream' ? `下游: ${bgpData.downstreams.length} 个` :
+                       `共 ${bgpData.allPeers.length} 个`}
                     </span>
                   </div>
-                  
-                  <div className="space-y-2">
-                    {(protocolType === 'ipv4' ? bgpData.ipv4Peers :
-                      protocolType === 'ipv6' ? bgpData.ipv6Peers :
-                      bgpData.allPeers).map((peer) => (
-                      <div 
-                        key={peer.asn}
+
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {getDisplayPeers(bgpData).map((peer) => (
+                      <div
+                        key={`${peer.asn}-${peer.type}`}
                         className="flex items-center justify-between p-3 bg-[rgb(var(--color-surface-hover))] rounded-lg border border-[rgb(var(--color-border))] transition-colors duration-300"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="flex items-center space-x-2">
-                            {/* 类型指示器 */}
-                            <div className={`w-3 h-3 rounded-full ${
-                              protocolType === 'both' && bgpData.ipv4Peers.some(p => p.asn === peer.asn) && 
-                              bgpData.ipv6Peers.some(p => p.asn === peer.asn) 
-                                ? 'bg-emerald-500' 
-                                : protocolType === 'both' && bgpData.ipv6Peers.some(p => p.asn === peer.asn)
-                                  ? 'bg-purple-500'
-                                  : protocolType === 'both' && bgpData.ipv4Peers.some(p => p.asn === peer.asn)
-                                    ? 'bg-blue-500'
-                                    : protocolType === 'ipv4'
-                                      ? 'bg-blue-500'
-                                      : 'bg-purple-500'
-                            }`}></div>
-                            
-                            <span className="font-mono text-sm font-medium text-[rgb(var(--color-text-primary))]">
-                              AS{peer.asn}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-[rgb(var(--color-text-primary))]">
-                              {peer.name}
-                            </span>
-                            <span className="text-xs text-[rgb(var(--color-text-secondary))]">
-                              {peer.description}
-                            </span>
-                          </div>
+                          <div className={`w-3 h-3 rounded-full ${getPeerTypeColor(peer.type)}`}></div>
+                          <span className="font-mono text-sm font-medium text-[rgb(var(--color-text-primary))]">
+                            AS{peer.asn}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text-secondary))] border border-[rgb(var(--color-border))]">
+                            {getPeerTypeLabel(peer.type)}
+                          </span>
                         </div>
-                        
-                        {peer.country_code && peer.country_code !== 'XX' && (
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-[rgb(var(--color-text-muted))] font-mono">
-                              {peer.country_code}
-                            </span>
-                          </div>
-                        )}
+
+                        <div className="flex items-center space-x-4 text-xs text-[rgb(var(--color-text-muted))]">
+                          <span>路径: {peer.power}</span>
+                          {peer.v4Peer > 0 && <span>v4: {peer.v4Peer}</span>}
+                          {peer.v6Peer > 0 && <span>v6: {peer.v6Peer}</span>}
+                        </div>
                       </div>
                     ))}
-                    
-                    {(protocolType === 'ipv4' ? bgpData.ipv4Peers.length :
-                      protocolType === 'ipv6' ? bgpData.ipv6Peers.length :
-                      bgpData.allPeers.length) > 20 && (
-                      <div className="text-center py-2">
-                        <span className="text-sm text-[rgb(var(--color-text-muted))]">
-                          还有 {(protocolType === 'ipv4' ? bgpData.ipv4Peers.length :
-                                protocolType === 'ipv6' ? bgpData.ipv6Peers.length :
-                                bgpData.allPeers.length) - 20} 个节点未显示...
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -327,4 +309,4 @@ export default function BGPPeersDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}
