@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // output: "export" only in production build, dev mode doesn't support it well
-  // with optional catch-all routes. See: https://github.com/vercel/next.js/issues/56477
-  output: process.env.NODE_ENV === "production" ? "export" : undefined,
+  // SSR mode for EdgeOne Pages deployment
+  // No "output: export" — dynamic routes like /1.1.1.1 are rendered server-side
 };
 
 export default nextConfig;

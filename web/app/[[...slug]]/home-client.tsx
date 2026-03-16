@@ -4,35 +4,29 @@ import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2 } from "lucide-react";
 import { useIPQueryStore } from "@/lib/store";
-import { isValidIP } from "@/lib/ip-detection";
 import IPQueryForm from "@/components/ip-query-form";
 import IPInfoCard from "@/components/ip-info-card";
 import ThemeToggle from "@/components/theme-toggle";
 
-export default function Home() {
+interface HomeProps {
+  initialIP?: string;
+}
+
+export default function Home({ initialIP }: HomeProps) {
   const {
     ipData,
     isLoading,
     executeQuery
   } = useIPQueryStore();
 
-  // 页面加载时检测URL路径中的IP（如 /1.1.1.1），或自动检测客户端IP
+  // 页面加载时：如果有 initialIP（来自URL路径），则查询该IP；否则自动检测客户端IP
   useEffect(() => {
-    const path = window.location.pathname;
-    if (path && path !== "/") {
-      let possibleIP = decodeURIComponent(path.slice(1));
-      // 处理可能残留的URL编码
-      if (possibleIP.includes("%3A")) {
-        possibleIP = possibleIP.replace(/%3A/g, ":");
-      }
-      if (isValidIP(possibleIP)) {
-        executeQuery(possibleIP);
-        return;
-      }
+    if (initialIP) {
+      executeQuery(initialIP);
+    } else {
+      executeQuery();
     }
-    // 无IP路径，自动检测客户端IP
-    executeQuery();
-  }, [executeQuery]);
+  }, [executeQuery, initialIP]);
 
   // 结构化数据
   const jsonLd = {
