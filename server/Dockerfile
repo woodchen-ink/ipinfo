@@ -16,11 +16,12 @@ FROM alpine:3.21
 WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata && \
-    adduser -D -g '' appuser && \
-    mkdir -p /app/data && \
-    chown -R appuser:appuser /app
+    adduser -D -g '' appuser
 
 COPY --from=builder /app/ipinfo-server .
+
+RUN mkdir -p /app/data && \
+    chown -R appuser:appuser /app
 
 VOLUME ["/app/data"]
 

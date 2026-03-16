@@ -30,9 +30,7 @@ FROM alpine:3.21
 WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata nginx && \
-    adduser -D -g '' appuser && \
-    mkdir -p /app/data && \
-    chown -R appuser:appuser /app
+    adduser -D -g '' appuser
 
 # Copy Go binary
 COPY --from=server-builder /app/ipinfo-server .
@@ -43,7 +41,10 @@ COPY --from=web-builder /app/out /usr/share/nginx/html
 # Copy nginx config and startup script
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+
+RUN mkdir -p /app/data && \
+    chmod +x /app/start.sh && \
+    chown -R appuser:appuser /app
 
 VOLUME ["/app/data"]
 
