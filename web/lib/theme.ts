@@ -21,12 +21,12 @@ const getSystemTheme = (): "light" | "dark" => {
 
 // 从localStorage获取保存的主题
 const getStoredTheme = (): Theme => {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
   try {
     const stored = localStorage.getItem("theme") as Theme;
-    return stored || "dark";
+    return stored || "light";
   } catch {
-    return "dark";
+    return "light";
   }
 };
 
@@ -36,8 +36,8 @@ const resolveTheme = (theme: Theme): "light" | "dark" => {
 };
 
 export const useTheme = (): ThemeContextValue => {
-  const [theme, setThemeState] = useState<Theme>("dark");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
   // 应用主题到DOM
   const applyTheme = (newResolvedTheme: "light" | "dark") => {
