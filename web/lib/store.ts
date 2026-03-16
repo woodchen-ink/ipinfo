@@ -42,6 +42,24 @@ export interface IPInfo {
   ipVersion: "IPv4" | "IPv6";
   // 代理检测信息
   proxyDetection?: ProxyDetectionResult;
+  // ip.nc.gy 补充数据
+  ncgy?: {
+    city?: string;
+    country?: string;
+    countryCode?: string;
+    province?: string;
+    asn?: number;
+    asOrg?: string;
+    proxy?: {
+      isProxy: boolean;
+      isVPN: boolean;
+      isTor: boolean;
+      isHosting: boolean;
+      isCDN: boolean;
+      isSchool: boolean;
+      isAnonymous: boolean;
+    };
+  };
   // 美团特有字段
   meituan?: {
     areaName?: string; // 区域名称，如"王府井/东单"

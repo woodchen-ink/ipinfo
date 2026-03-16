@@ -799,6 +799,96 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
               </motion.div>
             )}
 
+            {/* IP 特征检测 (ip.nc.gy) */}
+            {currentData.ncgy && (
+              <motion.div
+                variants={itemVariants}
+                className="space-y-4 md:space-y-3 md:col-span-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <Eye className="w-5 h-5 text-violet-500" />
+                  <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">
+                    IP 特征检测
+                  </h3>
+                  <span className="text-xs text-[rgb(var(--color-text-muted))]">
+                    via ip.nc.gy
+                  </span>
+                </div>
+
+                <div className="pl-6 md:pl-7 space-y-4 md:space-y-3">
+                  {/* 代理/VPN/Tor 标签 */}
+                  {currentData.ncgy.proxy && (
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { key: "isProxy", label: "Proxy", value: currentData.ncgy.proxy.isProxy },
+                        { key: "isVPN", label: "VPN", value: currentData.ncgy.proxy.isVPN },
+                        { key: "isTor", label: "Tor", value: currentData.ncgy.proxy.isTor },
+                        { key: "isHosting", label: "Hosting", value: currentData.ncgy.proxy.isHosting },
+                        { key: "isCDN", label: "CDN", value: currentData.ncgy.proxy.isCDN },
+                        { key: "isSchool", label: "School", value: currentData.ncgy.proxy.isSchool },
+                        { key: "isAnonymous", label: "Anonymous", value: currentData.ncgy.proxy.isAnonymous },
+                      ].map((item) => (
+                        <span
+                          key={item.key}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${
+                            item.value
+                              ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                              : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                          }`}
+                        >
+                          {item.value ? (
+                            <Shield className="w-3 h-3" />
+                          ) : (
+                            <CheckCircle className="w-3 h-3" />
+                          )}
+                          <span>{item.label}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* GeoIP 数据对比 */}
+                  {(() => {
+                    const diffs: { label: string; ours: string; theirs: string }[] = [];
+                    if (currentData.ncgy.country && currentData.ncgy.country !== currentData.country) {
+                      diffs.push({ label: "国家", ours: currentData.country, theirs: currentData.ncgy.country });
+                    }
+                    if (currentData.ncgy.province && currentData.province && currentData.ncgy.province !== currentData.province) {
+                      diffs.push({ label: "省份", ours: currentData.province, theirs: currentData.ncgy.province });
+                    }
+                    if (currentData.ncgy.city && currentData.city && currentData.ncgy.city !== currentData.city) {
+                      diffs.push({ label: "城市", ours: currentData.city, theirs: currentData.ncgy.city });
+                    }
+                    if (currentData.ncgy.asn && currentData.as?.number && currentData.ncgy.asn !== currentData.as.number) {
+                      diffs.push({
+                        label: "ASN",
+                        ours: `AS${currentData.as.number} ${currentData.as.name || ""}`.trim(),
+                        theirs: `AS${currentData.ncgy.asn} ${currentData.ncgy.asOrg || ""}`.trim(),
+                      });
+                    }
+                    if (diffs.length === 0) return null;
+                    return (
+                      <div className="space-y-2">
+                        <div className="text-xs text-[rgb(var(--color-text-muted))]">数据差异对比</div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {diffs.map((diff) => (
+                            <div key={diff.label} className="bg-[rgb(var(--color-surface))] rounded-lg p-3">
+                              <div className="text-xs text-[rgb(var(--color-text-muted))] mb-1">{diff.label}</div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-mono text-[rgb(var(--color-text-primary))]">{diff.ours}</span>
+                                <span className="text-[rgb(var(--color-text-muted))]">vs</span>
+                                <span className="font-mono text-[rgb(var(--color-text-secondary))]">{diff.theirs}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </motion.div>
+            )}
+
             {/* 时区信息 */}
             {currentData.timezone && (
               <motion.div

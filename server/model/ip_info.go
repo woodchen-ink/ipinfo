@@ -28,6 +28,7 @@ type IPInfo struct {
 	IPVersion         string              `json:"ipVersion"`
 	ProxyDetection    *ProxyDetectionResult `json:"proxyDetection,omitempty"`
 	Meituan           *MeituanData        `json:"meituan,omitempty"`
+	Ncgy              *NcgyInfo           `json:"ncgy,omitempty"`
 }
 
 type ASInfo struct {

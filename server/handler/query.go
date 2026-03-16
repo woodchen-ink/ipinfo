@@ -1,20 +1,36 @@
 package handler
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/woodchen-ink/ipinfo-server/middleware"
+	"github.com/woodchen-ink/ipinfo-server/model"
 	"github.com/woodchen-ink/ipinfo-server/pkg/iputil"
 	"github.com/woodchen-ink/ipinfo-server/service"
 )
 
 type QueryHandler struct {
 	geoipSvc *service.GeoIPService
+	ncgySvc  *service.NcgyService
 }
 
-func NewQueryHandler(geoipSvc *service.GeoIPService) *QueryHandler {
-	return &QueryHandler{geoipSvc: geoipSvc}
+func NewQueryHandler(geoipSvc *service.GeoIPService, ncgySvc *service.NcgyService) *QueryHandler {
+	return &QueryHandler{geoipSvc: geoipSvc, ncgySvc: ncgySvc}
+}
+
+// enrichWithNcgy supplements the query result with ip.nc.gy data.
+func (h *QueryHandler) enrichWithNcgy(parentCtx context.Context, result *model.IPInfo) {
+	if h.ncgySvc == nil {
+		return
+	}
+	ncgyCtx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
+	defer cancel()
+	if ncgyResult, err := h.ncgySvc.QueryIP(ncgyCtx, result.IP); err == nil {
+		result.Ncgy = ncgyResult
+	}
 }
 
 type queryRequest struct {
@@ -35,6 +51,7 @@ func (h *QueryHandler) GetClientIP(c *gin.Context) {
 		return
 	}
 
+	h.enrichWithNcgy(c.Request.Context(), result)
 	SuccessWithCache(c, result, "public, max-age=300, s-maxage=300")
 }
 
@@ -73,5 +90,6 @@ func (h *QueryHandler) QueryIP(c *gin.Context) {
 		return
 	}
 
+	h.enrichWithNcgy(c.Request.Context(), result)
 	SuccessWithCache(c, result, "public, max-age=300, s-maxage=300")
 }

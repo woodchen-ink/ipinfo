@@ -47,6 +47,7 @@ func Initialize(cfg *config.Config, logger *zap.Logger) (*AppContext, error) {
 	bgpCache := cache.NewBGPCache(rdb, cfg.BGPCacheTTL)
 	meituanCache := cache.NewMeituanCache(rdb, cfg.MeituanCacheTTL)
 	proxyCache := cache.NewProxyCache(rdb, cfg.ProxyCacheTTL)
+	ncgyCache := cache.NewGenericCache(rdb, "ipinfo:ncgy:", cfg.DefaultCacheTTL)
 	geocodeCache := cache.NewGeocodeCache(rdb, cfg.GeocodeCacheTTL)
 	rateLimiter := cache.NewRateLimiter(rdb)
 
@@ -58,10 +59,11 @@ func Initialize(cfg *config.Config, logger *zap.Logger) (*AppContext, error) {
 	geoipSvc := service.NewGeoIPService(geoipReader, ipCache, geocodeSvc, maxmindFallback, ipinfoFallback, logger)
 	bgpSvc := service.NewBGPService(bgpCache, logger)
 	proxySvc := service.NewProxyDetectionService(proxyCache, logger)
+	ncgySvc := service.NewNcgyService(ncgyCache, logger)
 	meituanSvc := service.NewMeituanService(meituanCache, logger)
 
 	// 7. Handlers
-	queryHandler := handler.NewQueryHandler(geoipSvc)
+	queryHandler := handler.NewQueryHandler(geoipSvc, ncgySvc)
 	bgpHandler := handler.NewBGPHandler(bgpSvc)
 	proxyHandler := handler.NewProxyDetectionHandler(proxySvc)
 	meituanHandler := handler.NewMeituanHandler(meituanSvc)
