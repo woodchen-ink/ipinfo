@@ -1,30 +1,52 @@
 version: '3.8'
 
 services:
-  ipinfo:
-    build: .
+  # Go API 后端
+  ipinfo-server:
+    build: ./server
     ports:
-      - "3000:3000"
+      - "8080:8080"
     volumes:
-      # 将本地的 data 目录挂载到容器的 /app/lib/data
-      # 这样数据就会持久化在宿主机上
-      - ./data:/app/lib/data
+      - ./server/data:/app/data
     environment:
-      - NODE_ENV=production
-      - INIT_API_KEY=${INIT_API_KEY:-your-secret-init-key}
+      - PORT=8080
+      - GIN_MODE=release
+      - REDIS_ADDR=redis:6379
+      - DATA_DIR=/app/data
+      - INIT_API_KEY=${INIT_API_KEY:-}
+      - MAXMIND_ACCOUNT_ID=${MAXMIND_ACCOUNT_ID:-}
+      - MAXMIND_LICENSE_KEY=${MAXMIND_LICENSE_KEY:-}
+      - IPINFO_TOKEN=${IPINFO_TOKEN:-}
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
-# 可选：如果你想使用命名卷而不是绑定挂载
-# services:
-#   ipinfo:
-#     build: .
-#     ports:
-#       - "3000:3000"
-#     volumes:
-#       - ipinfo_data:/app/lib/data
-#     environment:
-#       - NODE_ENV=production
-#     restart: unless-stopped
-# 
-# volumes:
-#   ipinfo_data:
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # 前端静态文件（可选，也可以部署到 CDN）
+  ipinfo-web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: http://ipinfo-server:8080
+    ports:
+      - "3000:80"
+    depends_on:
+      - ipinfo-server
+    restart: unless-stopped
+
+volumes:
+  redis_data:

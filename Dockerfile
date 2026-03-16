@@ -1,67 +1,55 @@
-# ---- 构建阶段 ----
-    FROM node:22-alpine AS builder
-    WORKDIR /app
-    
-    # 只拷贝依赖文件，安装依赖
-    COPY package.json pnpm-lock.yaml ./
-    RUN npm install -g pnpm && pnpm install --frozen-lockfile
-    
-    # 拷贝全部源码（含 public、lib、.next.config.js/ts 等）
-    COPY . .
-    
-    # 构建 nextjs 产物
-    RUN pnpm build
-    
-    # 调试用（可选，排查产物问题时加）
-    RUN echo "=== .next/ ===" && ls -lh /app/.next || true
-    RUN echo "=== .next/standalone/ ===" && ls -lh /app/.next/standalone || true
-    RUN echo "=== public/ ===" && ls -lh /app/public || true
-    RUN echo "=== lib/data/ ===" && ls -lh /app/lib/data || true
-    
-    # ---- 运行阶段 ----
-    FROM node:22-alpine AS runner
-    WORKDIR /app
+### Stage 1: Build Go backend ###
+FROM golang:1.24-alpine AS server-builder
+WORKDIR /app
 
-    # 拷贝 standalone 产物和静态文件
-    COPY --from=builder /app/.next/standalone ./
-    COPY --from=builder /app/.next/static ./.next/static
-    COPY --from=builder /app/public ./public
+RUN apk add --no-cache git ca-certificates
 
-    # 拷贝默认数据文件作为初始数据（如果外部没有挂载数据的话）
-    COPY --from=builder /app/lib/data ./lib/data-default
+COPY server/go.mod server/go.sum ./
+RUN go mod download
 
-    # 创建数据目录并设置权限
-    RUN mkdir -p /app/lib/data && \
-        chown -R node:node /app && \
-        chown -R node:node /app/lib/data-default
+COPY server/ .
 
-    # 声明数据卷，用于持久化数据
-    VOLUME ["/app/lib/data"]
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/ipinfo-server ./cmd/server
 
-    # 创建启动脚本来处理数据初始化
-    RUN echo '#!/bin/sh' > /app/init-data.sh && \
-        echo '# 确保数据目录权限正确' >> /app/init-data.sh && \
-        echo 'chown -R node:node /app/lib/data 2>/dev/null || true' >> /app/init-data.sh && \
-        echo '# 如果数据目录为空，则从默认数据复制' >> /app/init-data.sh && \
-        echo 'if [ ! "$(ls -A /app/lib/data)" ]; then' >> /app/init-data.sh && \
-        echo '  echo "数据目录为空，正在复制默认数据..."' >> /app/init-data.sh && \
-        echo '  cp -r /app/lib/data-default/* /app/lib/data/ 2>/dev/null || true' >> /app/init-data.sh && \
-        echo '  chown -R node:node /app/lib/data 2>/dev/null || true' >> /app/init-data.sh && \
-        echo '  echo "默认数据复制完成"' >> /app/init-data.sh && \
-        echo 'else' >> /app/init-data.sh && \
-        echo '  echo "检测到现有数据，跳过初始化"' >> /app/init-data.sh && \
-        echo 'fi' >> /app/init-data.sh && \
-        echo 'exec "$@"' >> /app/init-data.sh && \
-        chmod +x /app/init-data.sh && \
-        chown node:node /app/init-data.sh
+### Stage 2: Build Next.js frontend (SSG) ###
+FROM node:22-alpine AS web-builder
+WORKDIR /app
 
-    # 切换到非root用户
-    USER node
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
-    EXPOSE 3000
-    ENV NODE_ENV=production
+COPY web/ .
 
-    # 使用初始化脚本启动应用
-    ENTRYPOINT ["/app/init-data.sh"]
-    CMD ["node", "server.js"]
-    
+# API requests go to same origin, nginx will proxy /api to backend
+ENV NEXT_PUBLIC_API_URL=""
+
+RUN pnpm build
+
+### Stage 3: Runtime - nginx + Go binary ###
+FROM alpine:3.21
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates tzdata nginx && \
+    adduser -D -g '' appuser && \
+    mkdir -p /app/data && \
+    chown -R appuser:appuser /app
+
+# Copy Go binary
+COPY --from=server-builder /app/ipinfo-server .
+
+# Copy frontend static files
+COPY --from=web-builder /app/out /usr/share/nginx/html
+
+# Copy nginx config and startup script
+COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+VOLUME ["/app/data"]
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -qO- http://localhost/health || exit 1
+
+CMD ["/app/start.sh"]
