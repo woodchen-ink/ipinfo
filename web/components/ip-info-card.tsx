@@ -810,9 +810,6 @@ export default function IPInfoCard({ ipData }: IPInfoCardProps) {
                   <h3 className="font-semibold text-[rgb(var(--color-text-primary))]">
                     IP 特征检测
                   </h3>
-                  <span className="text-xs text-[rgb(var(--color-text-muted))]">
-                    via ip.nc.gy
-                  </span>
                 </div>
 
                 <div className="pl-6 md:pl-7 space-y-4 md:space-y-3">
