@@ -1,18 +1,16 @@
-version: '3.8'
-
 services:
-  # Go API 后端
-  ipinfo-server:
-    build: ./server
+  ipinfo:
+    build: .
     ports:
-      - "8080:8080"
+      - "80:80"
     volumes:
       - ./server/data:/app/data
     environment:
-      - PORT=8080
+      - PORT=80
       - GIN_MODE=release
       - REDIS_ADDR=redis:6379
       - DATA_DIR=/app/data
+      - WEB_DIR=/app/web
       - INIT_API_KEY=${INIT_API_KEY:-}
       - MAXMIND_ACCOUNT_ID=${MAXMIND_ACCOUNT_ID:-}
       - MAXMIND_LICENSE_KEY=${MAXMIND_LICENSE_KEY:-}
@@ -22,11 +20,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Redis 缓存
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,18 +29,6 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-    restart: unless-stopped
-
-  # 前端静态文件（可选，也可以部署到 CDN）
-  ipinfo-web:
-    build:
-      context: ./web
-      args:
-        NEXT_PUBLIC_API_URL: http://ipinfo-server:8080
-    ports:
-      - "3000:80"
-    depends_on:
-      - ipinfo-server
     restart: unless-stopped
 
 volumes:

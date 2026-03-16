@@ -78,6 +78,7 @@ func Initialize(cfg *config.Config, logger *zap.Logger) (*AppContext, error) {
 		healthHandler,
 		rateLimiter,
 		logger,
+		cfg.WebDir,
 	)
 
 	logger.Info("应用初始化完成")

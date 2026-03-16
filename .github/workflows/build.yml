@@ -1,6 +1,13 @@
 name: Build and Push Docker Image
 
 on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'server/**'
+      - 'web/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
   workflow_dispatch:
 
 env:
@@ -52,3 +59,7 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+      - name: Trigger deploy
+        if: success()
+        run: curl -fsSL -X POST https://dp.czl.net/api/deploy/MZJ_3MZkB7FpTyrCkUvgN

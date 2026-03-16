@@ -1,4 +1,4 @@
-// API base URL for client-side requests.
-// On EdgeOne Pages: set NEXT_PUBLIC_API_URL to the Go backend address (browser requests directly).
-// In Docker: leave empty — nginx proxies /api/* to the Go backend on same origin.
+// API base URL for the Go backend.
+// In Docker/production: empty string — Go serves both API and frontend on same origin.
+// In development: set NEXT_PUBLIC_API_URL to the Go server address if needed.
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";

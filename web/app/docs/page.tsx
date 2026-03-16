@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Code2, Globe, MessageCircle, Menu, X, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/theme-toggle";
-import { API_BASE_URL } from "@/lib/api-config";
 
 // 定义内容区域类型
 type SectionType = 'url-query' | 'api-usage' | 'rate-limit' | 'feedback';
@@ -80,7 +79,7 @@ export default function DocsPage() {
                   <span className="inline-block bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 px-2 py-1 rounded text-xs font-medium mr-2">
                     GET
                   </span>
-                  <span className="text-blue-600 dark:text-blue-400">{API_BASE_URL}/api/query</span>
+                  <span className="text-blue-600 dark:text-blue-400">/api/query</span>
                 </div>
               </div>
             </div>
@@ -92,7 +91,7 @@ export default function DocsPage() {
                   <span className="inline-block bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-xs font-medium mr-2">
                     POST
                   </span>
-                  <span className="text-blue-600 dark:text-blue-400">{API_BASE_URL}/api/query</span>
+                  <span className="text-blue-600 dark:text-blue-400">/api/query</span>
                 </div>
                 <div className="text-gray-600 dark:text-gray-400 mb-2">请求体：</div>
                 <div className="bg-gray-100 dark:bg-slate-600 rounded p-3">
@@ -151,19 +150,19 @@ export default function DocsPage() {
               </h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded">
-                  <span className="font-mono text-blue-600 dark:text-blue-400">{API_BASE_URL}/api/query</span>
+                  <span className="font-mono text-blue-600 dark:text-blue-400">/api/query</span>
                   <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full font-medium">
                     60 次/分钟
                   </span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded">
-                  <span className="font-mono text-green-600 dark:text-green-400">{API_BASE_URL}/api/bgp/*</span>
+                  <span className="font-mono text-green-600 dark:text-green-400">/api/bgp/*</span>
                   <span className="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 px-3 py-1 rounded-full font-medium">
                     20 次/分钟
                   </span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-white/50 dark:bg-slate-800/50 rounded">
-                  <span className="font-mono text-purple-600 dark:text-purple-400">{API_BASE_URL}/api/proxy-detection</span>
+                  <span className="font-mono text-purple-600 dark:text-purple-400">/api/proxy-detection</span>
                   <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 px-3 py-1 rounded-full font-medium">
                     10 次/分钟
                   </span>

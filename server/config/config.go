@@ -29,6 +29,9 @@ type Config struct {
 	// Init API key
 	InitAPIKey string `env:"INIT_API_KEY,default="`
 
+	// Frontend static files directory (SPA mode)
+	WebDir string `env:"WEB_DIR,default="`
+
 	// Geocode
 	NominatimBaseURL string `env:"NOMINATIM_BASE_URL,default=https://map.447654.xyz/search"`
 

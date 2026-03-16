@@ -20,31 +20,30 @@ RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 COPY web/ .
 
-# API requests go to same origin, nginx will proxy /api to backend
+# Same origin — Go backend serves both API and frontend
 ENV NEXT_PUBLIC_API_URL=""
 
 RUN pnpm build
 
-### Stage 3: Runtime - nginx + Go binary ###
+### Stage 3: Runtime - Go binary serves everything ###
 FROM alpine:3.21
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates tzdata nginx && \
+RUN apk add --no-cache ca-certificates tzdata && \
     adduser -D -g '' appuser
 
 # Copy Go binary
 COPY --from=server-builder /app/ipinfo-server .
 
-# Copy frontend static files
-COPY --from=web-builder /app/out /usr/share/nginx/html
-
-# Copy nginx config and startup script
-COPY nginx.conf /etc/nginx/http.d/default.conf
-COPY start.sh /app/start.sh
+# Copy frontend static files (SSG output)
+COPY --from=web-builder /app/out /app/web
 
 RUN mkdir -p /app/data && \
-    chmod +x /app/start.sh && \
     chown -R appuser:appuser /app
+
+# Go serves frontend static files from /app/web
+ENV WEB_DIR=/app/web
+ENV PORT=80
 
 VOLUME ["/app/data"]
 
@@ -53,4 +52,4 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://localhost/health || exit 1
 
-CMD ["/app/start.sh"]
+CMD ["./ipinfo-server"]
