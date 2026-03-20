@@ -3,6 +3,8 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
@@ -48,5 +50,83 @@ func Load() (*Config, error) {
 	if err := envconfig.Process(context.Background(), &cfg); err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
+	cfg.WebDir = resolveWebDir(cfg.WebDir)
 	return &cfg, nil
+}
+
+func resolveWebDir(configured string) string {
+	candidates := make([]string, 0, 16)
+	if configured != "" {
+		candidates = append(candidates, configured)
+	}
+
+	for _, base := range upwardSearchBases(4) {
+		candidates = append(candidates,
+			filepath.Join(base, "web"),
+			filepath.Join(base, "web", "out"),
+		)
+	}
+
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		for _, base := range upwardSearchBasesFromDir(exeDir, 3) {
+			candidates = append(candidates,
+				filepath.Join(base, "web"),
+				filepath.Join(base, "web", "out"),
+			)
+		}
+	}
+
+	for _, candidate := range candidates {
+		if resolved, ok := frontendDirIfValid(candidate); ok {
+			return resolved
+		}
+	}
+
+	return configured
+}
+
+func upwardSearchBases(levels int) []string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil
+	}
+	return upwardSearchBasesFromDir(wd, levels)
+}
+
+func upwardSearchBasesFromDir(start string, levels int) []string {
+	bases := make([]string, 0, levels+1)
+	current := start
+	for range levels + 1 {
+		bases = append(bases, current)
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return bases
+}
+
+func frontendDirIfValid(dir string) (string, bool) {
+	if dir == "" {
+		return "", false
+	}
+
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", false
+	}
+
+	info, err := os.Stat(absDir)
+	if err != nil || !info.IsDir() {
+		return "", false
+	}
+
+	indexPath := filepath.Join(absDir, "index.html")
+	if info, err = os.Stat(indexPath); err != nil || info.IsDir() {
+		return "", false
+	}
+
+	return absDir, true
 }

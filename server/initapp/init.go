@@ -71,7 +71,7 @@ func Initialize(cfg *config.Config, logger *zap.Logger) (*AppContext, error) {
 	healthHandler := handler.NewHealthHandler()
 
 	// 8. Router
-	engine := router.SetupRouter(
+	engine, err := router.SetupRouter(
 		queryHandler,
 		bgpHandler,
 		proxyHandler,
@@ -82,6 +82,15 @@ func Initialize(cfg *config.Config, logger *zap.Logger) (*AppContext, error) {
 		logger,
 		cfg.WebDir,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("Router初始化失败: %w", err)
+	}
+
+	if cfg.WebDir == "" {
+		logger.Warn("前端静态目录未配置，当前只提供 API 路由")
+	} else {
+		logger.Info("前端静态目录已加载", zap.String("web_dir", cfg.WebDir))
+	}
 
 	logger.Info("应用初始化完成")
 
